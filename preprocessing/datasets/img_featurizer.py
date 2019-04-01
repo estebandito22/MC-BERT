@@ -10,11 +10,11 @@ from PIL import Image
 import torchvision.transforms.functional as TF
 
 
-class ImgFeaturizerDataset(Dataset, img_size=None):
+class ImgFeaturizerDataset(Dataset):
 
     """Class to load Pinterest dataset for feature extraction."""
 
-    def __init__(self, metadata):
+    def __init__(self, metadata, img_size=None):
         """
         Initialize PinterestImgsDataset.
 
@@ -37,14 +37,14 @@ class ImgFeaturizerDataset(Dataset, img_size=None):
         #because I don't know how the other images will react
         #we'll leave the old code if there is no img_size specified
 
-        if (img_size == None):
+        if (self.img_size == None):
             img = torch.tensor(io.imread(img_path))
             if img.dim() < 3:
                 img = F.pad(img.unsqueeze(-1), (2, 0, 0, 0, 0, 0))
             img = img.float().permute(2, 0, 1)
         else: 
             img = Image.open(img_path).convert('RGB')
-            img = TF.to_tensor(TF.resize(img, (224, 224)))
+            img = TF.to_tensor(TF.resize(img, (self.img_size, self.img_size)))
 
         img = self.normalize(img)
 

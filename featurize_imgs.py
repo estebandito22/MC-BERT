@@ -29,7 +29,7 @@ if __name__ == '__main__':
     args = vars(ap.parse_args())
 
     metadata = pd.read_csv(args['metadata_path'], header=None)
-    imf_dataset = ImgFeaturizerDataset(metadata, img_size=image_size)
+    imf_dataset = ImgFeaturizerDataset(metadata, img_size=args['image_size'])
 
     imf = ImgFeaturizer(args['batch_size'], args['save_dir'])
     new_metadata = imf.transform(imf_dataset)
