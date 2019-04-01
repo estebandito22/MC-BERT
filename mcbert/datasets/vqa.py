@@ -7,14 +7,12 @@ from torch.utils.data import Dataset
 
 from sklearn.model_selection import train_test_split
 
-from pytorch_pretrained_bert import BertTokenizer
-
 
 class VQAPretrainDataset(Dataset):
 
     """Class to load Pinterest dataset."""
 
-    def __init__(self, metadata, vocab, split='train', max_sent_len=64):
+    def __init__(self, metadata, tokenizer, split='train', max_sent_len=64):
         """
         Initialize PinterestDataset.
         Args
@@ -23,9 +21,7 @@ class VQAPretrainDataset(Dataset):
         self.metadata = metadata
         self.split = split
         self.max_sent_len = max_sent_len
-        self.vocab = vocab
-        version = "bert-base-cased"
-        self.tokenizer = BertTokenizer.from_pretrained(version)
+        self.tokenizer = tokenizer
         self._train_test_split()
 
     def _train_test_split(self):
@@ -65,14 +61,12 @@ class VQAPretrainDataset(Dataset):
         sentence = self.metadata.iat[i, 1]
         label = self.metadata.iat[i, 2]
 
-        # add special tokens
-
-        tokenized = ['[CLS]'] + [self.tokenizer.tokenize(x) for x in sentence.split(" ")]
-        token_type_ids = [[i] * len(x) for i, x in enumerate(tokenized)]
-        input_ids = self.tokenizer.convert_tokens_to_ids(tokenized)
+        # tokenize, add any special characters, and return indexes
+        input_ids, token_type_ids = self.tokenizer(sentence, self.max_sent_len)
 
         input_ids = torch.tensor(input_ids).long()
-        token_type_ids = torch.tensor(token_type_ids).long()
+        if token_type_ids is not None:
+            token_type_ids = torch.tensor(token_type_ids).long()
 
         vis_feats = torch.load(vis_feats_path)
         vis_feats = vis_feats.unsqueeze(0).repeat(

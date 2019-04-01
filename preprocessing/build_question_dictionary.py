@@ -2,7 +2,7 @@ import csv
 import sys
 from collections import Counter
 
-import util.mcbtokenizer as tokenizer
+from util.mcbtokenizer import MCBTokenizer
 
 '''
 This script will take in a list of csv files where the second field is a text string, and build a dictionary.
@@ -13,6 +13,8 @@ if len(sys.argv) == 1:
     exit(1)
 
 all_words = []
+
+tokenizer = MCBTokenizer(None) #don't actually have a dict yet
 
 for cfile in sys.argv[2:]:
     print("parsing", cfile)

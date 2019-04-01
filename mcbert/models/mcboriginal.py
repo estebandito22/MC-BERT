@@ -7,12 +7,16 @@ import torch
 
 from mcbert.models.layers.visual.attention import AttentionMechanism
 from mcbert.models.layers.composition.mcb import MCB
+from util.mcbtokenizer import MCBDict
 
 class MCBOriginalModel(nn.Module):
 
     """Class implementing MCBERT Model with visual attention."""
 
-    def __init__(self, vocab_size, glove_embedding, vis_feat_dim=2208, spatial_size=7, embd_dim=300, bert_hidden_dim = 2048,
+    #questions - what does the bert tokenizer return, what are token_type_ids
+    #where do I want to put loading the dictionary
+
+    def __init__(self, vocab_file, vis_feat_dim=2208, spatial_size=7, embd_dim=300, bert_hidden_dim = 2048,
                  cmb_feat_dim=16000, kernel_size=3 ):
         """Initialize MCBertModel."""
         super(MCBOriginalModel, self).__init__()
@@ -21,7 +25,28 @@ class MCBOriginalModel(nn.Module):
         self.hidden_dim = bert_hidden_dim
         self.cmb_feat_dim = cmb_feat_dim
         self.kernel_size = kernel_size
-        self.glove = glove_embedding
+
+        #probably want to do this elsewhere and pass in but...
+        dict = MCBDict(metadata=vocab_file)
+        vocab_size = dict.size()
+
+        # override the word embeddings with pre-trained
+        self.glove = nn.Embedding(vocab_size, embd_dim, padding_idx=0)
+        self.glove.weight = nn.Parameter(dict.get_gloves())
+
+        # build mask  (Or, especially if we don't need EOS/SOS, just make OOV random
+        self.embeddings_mask = torch.zeros(vocab_size).float()
+        self.embeddings_mask[0] = 1
+        self.embeddings_mask[1] = 1
+        self.embeddings_mask[2] = 1
+        self.embeddings_mask[3] = 1
+        self.embeddings_mask.requires_grad = False
+        self.embeddings_mask.resize_(vocab_size, 1)
+
+        # mask pretrained embeddings
+        self.glove.weight.register_hook(
+            lambda grad: grad * self.embeddings_mask)
+
         self.embedding = nn.Embedding(vocab_size, embd_dim, padding_idx=0) #weight_filler=dict(type='uniform',min=-0.08,max=0.08))
         self.layer1 = nn.LSTM(embd_dim*2, hidden_size=1024) #weight_filler=dict(type='uniform',min=-0.08,max=0.08)
         self.drop1 = nn.Dropout(0.3)
