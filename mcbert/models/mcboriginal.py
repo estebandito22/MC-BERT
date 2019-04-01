@@ -7,7 +7,7 @@ import torch
 
 from mcbert.models.layers.visual.attention import AttentionMechanism
 from mcbert.models.layers.composition.mcb import MCB
-from util.mcbtokenizer import MCBDict
+from mcbert.util.mcbtokenizer import MCBDict
 
 class MCBOriginalModel(nn.Module):
 
@@ -16,13 +16,15 @@ class MCBOriginalModel(nn.Module):
     #questions - what does the bert tokenizer return, what are token_type_ids
     #where do I want to put loading the dictionary
 
-    def __init__(self, vocab_file, vis_feat_dim=2208, spatial_size=7, embd_dim=300, bert_hidden_dim = 2048,
-                 cmb_feat_dim=16000, kernel_size=3 ):
+    def __init__(self, vocab_file, vis_feat_dim=2208, spatial_size=7, embd_dim=300, hidden_dim = 2048,
+                 cmb_feat_dim=16000, kernel_size=3, classification = True ):
+
+
         """Initialize MCBertModel."""
         super(MCBOriginalModel, self).__init__()
         self.vis_feat_dim = vis_feat_dim
         self.spatial_size = spatial_size
-        self.hidden_dim = bert_hidden_dim
+        self.hidden_dim = hidden_dim
         self.cmb_feat_dim = cmb_feat_dim
         self.kernel_size = kernel_size
 

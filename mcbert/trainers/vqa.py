@@ -15,7 +15,7 @@ from pytorch_pretrained_bert import BertAdam
 from mcbert.trainers.base_trainer import Trainer
 from mcbert.models.mcbert import MCBertModel
 from mcbert.models.classifier_head import ClassifierHeadModel
-
+from mcbert.models.mcboriginal import MCBOriginalModel
 
 class VQATrainer(Trainer):
 
@@ -24,7 +24,7 @@ class VQATrainer(Trainer):
     def __init__(self, model_type='mc-bert', vis_feat_dim=2048, spatial_size=7,
                  lm_hidden_dim=768, cmb_feat_dim=16000, kernel_size=3,
                  dropout=0.2, n_classes=3000, batch_size=64,
-                 learning_rate=3e-5, warmup_proportion=0.1, num_epochs=100):
+                 learning_rate=3e-5, warmup_proportion=0.1, num_epochs=100, vocab=None):
         """
         Initialize BertMBC model.
 
@@ -60,6 +60,7 @@ class VQATrainer(Trainer):
         self.nn_epoch = 0
         self.best_val_loss = float('inf')
         self.save_dir = None
+        self.vocab = vocab
 
         self.USE_CUDA = torch.cuda.is_available()
 
@@ -70,6 +71,13 @@ class VQATrainer(Trainer):
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, classification=True)
+
+        elif self.model_type == 'mcb':
+            mcb_model = MCBOriginalModel(self.vocab,
+                vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
+                hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
+                kernel_size=self.kernel_size, classification=True)
+
         else:
             raise ValueError("Did not recognize model type!")
 

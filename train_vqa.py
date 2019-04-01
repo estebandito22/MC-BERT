@@ -3,11 +3,10 @@
 from argparse import ArgumentParser
 import pandas as pd
 
-from pytorch_pretrained_bert.tokenization import load_vocab
-
 from mcbert.datasets.vqa import VQADataset
 from mcbert.trainers.vqa import VQATrainer
-
+from mcbert.util import mcbtokenizer
+from mcbert.util import berttokenizer
 
 if __name__ == '__main__':
     """
@@ -66,9 +65,19 @@ if __name__ == '__main__':
                     help="Epoch of model for ward start.")
     args = vars(ap.parse_args())
 
+
+    if args['model_type'] == 'mcb':
+        dict = mcbtokenizer(args['vocab'])
+        tokenizer = mcbtokenizer.MCBTokenizer(dict)
+    elif args['model_type'] == 'mc-bert':
+        tokenizer = berttokenizer.BertTokenizer()
+    else:
+        print("unknown model type")
+        exit(1)
+
     metadata = pd.read_csv(args['metadata_path'])
-    train_dataset = VQADataset(metadata, split='train')
-    val_dataset = VQADataset(metadata, split='val')
+    train_dataset = VQADataset(metadata, tokenizer, split='train')
+    val_dataset = VQADataset(metadata, tokenizer, split='val')
 
     vqa = VQATrainer(model_type=args['model_type'],
                      vis_feat_dim=args['vis_feat_dim'],
@@ -81,7 +90,8 @@ if __name__ == '__main__':
                      batch_size=args['batch_size'],
                      learning_rate=args['learning_rate'],
                      warmup_proportion=args['warmup_proportion'],
-                     num_epochs=args['num_epochs'])
+                     num_epochs=args['num_epochs'],
+                     vocab=args['vocab'])
 
     if args['continue_path'] and args['continue_epoch']:
         vqa.load(
