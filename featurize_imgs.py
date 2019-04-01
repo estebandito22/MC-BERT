@@ -24,10 +24,12 @@ if __name__ == '__main__':
                     help="Path to metadata dataframe with file locations.")
     ap.add_argument("-sd", "--save_dir",
                     help="Path to directory to save img features to.")
+    ap.add_argument("-mx", "--image_size", type=int, default=None,
+                    help="Path to directory to save img features to.")
     args = vars(ap.parse_args())
 
     metadata = pd.read_csv(args['metadata_path'], header=None)
-    imf_dataset = ImgFeaturizerDataset(metadata)
+    imf_dataset = ImgFeaturizerDataset(metadata, img_size=image_size)
 
     imf = ImgFeaturizer(args['batch_size'], args['save_dir'])
     new_metadata = imf.transform(imf_dataset)
