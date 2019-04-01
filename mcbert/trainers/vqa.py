@@ -8,28 +8,32 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import Subset
 from torch.utils.data import DataLoader
+from torch.optim import Adam
 
 from pytorch_pretrained_bert import BertAdam
 
 from mcbert.trainers.base_trainer import Trainer
-from mcbert.models.mcbert_for_pretraining import MCBertForPretrainingModel
+from mcbert.models.mcbert import MCBertModel
+from mcbert.models.classifier_head import ClassifierHeadModel
 
 
-class MCBertForPretraining(Trainer):
+class VQATrainer(Trainer):
 
     """Class to train and evaluate BertVisualMemory."""
 
-    def __init__(self, vis_feat_dim=2048, spatial_size=7, hidden_dim=768,
-                 cmb_feat_dim=16000, kernel_size=3, batch_size=64,
+    def __init__(self, model_type='mc-bert', vis_feat_dim=2048, spatial_size=7,
+                 lm_hidden_dim=768, cmb_feat_dim=16000, kernel_size=3,
+                 dropout=0.2, n_classes=3000, batch_size=64,
                  learning_rate=3e-5, warmup_proportion=0.1, num_epochs=100):
         """
         Initialize BertMBC model.
 
         Args
         ----
+            model_type : string, model name, 'mc-bert'.
             vis_feat_dim : int, intermediate visual feature dimension.
             spatial_size : int, spatial size of visual features.
-            hidden_dim : int, size of hidden state in BERT.
+            lm_hidden_dim : int, size of hidden state in language model.
             cmb_feat_dim : int, combined feature dimension.
             kernel_size : int, kernel_size to use in attention.
             batch_size : int, batch size for optimization.
@@ -37,11 +41,14 @@ class MCBertForPretraining(Trainer):
 
         """
         # Trainer attributes
+        self.model_type = model_type
         self.vis_feat_dim = vis_feat_dim
         self.spatial_size = spatial_size
-        self.hidden_dim = hidden_dim
+        self.lm_hidden_dim = lm_hidden_dim
         self.cmb_feat_dim = cmb_feat_dim
         self.kernel_size = kernel_size
+        self.dropout = dropout
+        self.n_classes = n_classes
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.warmup_proportion = warmup_proportion
@@ -56,30 +63,40 @@ class MCBertForPretraining(Trainer):
 
         self.USE_CUDA = torch.cuda.is_available()
 
-    def _init_nn(self, train_dataset_len):
+    def _init_nn(self, train_dataset_len=None):
         """Initialize the nn model for training."""
-        self.model = MCBertForPretrainingModel(
-            vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
-            hidden_dim=self.hidden_dim,
-            cmb_feat_dim=self.cmb_feat_dim, kernel_size=self.kernel_size)
+        if self.model_type == 'mc-bert':
+            mcb_model = MCBertModel(
+                vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
+                hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
+                kernel_size=self.kernel_size, classification=True)
+        else:
+            raise ValueError("Did not recognize model type!")
 
-        # Prepare optimizer
-        param_optimizer = list(self.model.named_parameters())
-        no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-        optimizer_grouped_parameters = [
-            {'params': [p for n, p in param_optimizer
-                        if not any(nd in n for nd in no_decay)],
-             'weight_decay': 0.01},
-            {'params': [p for n, p in param_optimizer
-                        if any(nd in n for nd in no_decay)],
-             'weight_decay': 0.0}
-            ]
+        self.model = ClassifierHeadModel(
+            mcb_model, dropout=self.dropout, n_classes=self.n_classes)
 
-        self.optimizer = BertAdam(
-            optimizer_grouped_parameters, lr=self.learning_rate,
-            warmup=self.warmup_proportion,
-            t_total=int(train_dataset_len / 40
-                        / self.batch_size * self.num_epochs))
+        if self.model_type == 'mc-bert':
+            # Prepare optimizer
+            param_optimizer = list(self.model.named_parameters())
+            no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+            optimizer_grouped_parameters = [
+                {'params': [p for n, p in param_optimizer
+                            if not any(nd in n for nd in no_decay)],
+                 'weight_decay': 0.01},
+                {'params': [p for n, p in param_optimizer
+                            if any(nd in n for nd in no_decay)],
+                 'weight_decay': 0.0}
+                ]
+
+            self.optimizer = BertAdam(
+                optimizer_grouped_parameters, lr=self.learning_rate,
+                warmup=self.warmup_proportion,
+                t_total=int(train_dataset_len / 40
+                            / self.batch_size * self.num_epochs))
+        else:
+            self.optimizer = Adam(
+                self.model.parameters(), lr=self.learning_rate)
 
         if self.USE_CUDA:
             self.model = self.model.cuda()
@@ -97,9 +114,8 @@ class MCBertForPretraining(Trainer):
             input_ids = batch_samples['input_ids']
             token_type_ids = batch_samples['token_type_ids']
             attention_mask = batch_samples['attention_mask']
-            masked_lm_labels = batch_samples['masked_lm_labels']
             # batch_size
-            next_sentence_label = batch_samples['next_sentence_label']
+            labels = batch_samples['labels']
             # batch_size x seqlen x height x width
             vis_feats = batch_samples['vis_feats']
 
@@ -107,15 +123,13 @@ class MCBertForPretraining(Trainer):
                 input_ids = input_ids.cuda()
                 token_type_ids = token_type_ids.cuda()
                 attention_mask = attention_mask.cuda()
-                masked_lm_labels = masked_lm_labels.cuda()
-                next_sentence_label = next_sentence_label.cuda()
+                labels = labels.cuda()
                 vis_feats = vis_feats.cuda()
 
             # forward pass
             self.model.zero_grad()
             loss = self.model(
-                vis_feats, input_ids, token_type_ids, attention_mask,
-                masked_lm_labels, next_sentence_label)
+                vis_feats, input_ids, token_type_ids, attention_mask, labels)
 
             # backward pass
             loss.backward()
@@ -144,9 +158,8 @@ class MCBertForPretraining(Trainer):
                 input_ids = batch_samples['input_ids']
                 token_type_ids = batch_samples['token_type_ids']
                 attention_mask = batch_samples['attention_mask']
-                masked_lm_labels = batch_samples['masked_lm_labels']
                 # batch_size
-                next_sentence_label = batch_samples['next_sentence_label']
+                labels = batch_samples['labels']
                 # batch_size x seqlen x height x width
                 vis_feats = batch_samples['vis_feats']
 
@@ -154,14 +167,13 @@ class MCBertForPretraining(Trainer):
                     input_ids = input_ids.cuda()
                     token_type_ids = token_type_ids.cuda()
                     attention_mask = attention_mask.cuda()
-                    masked_lm_labels = masked_lm_labels.cuda()
-                    next_sentence_label = next_sentence_label.cuda()
+                    labels = labels.cuda()
                     vis_feats = vis_feats.cuda()
 
                 # forward pass
                 loss = self.model(
                     vis_feats, input_ids, token_type_ids, attention_mask,
-                    masked_lm_labels, next_sentence_label)
+                    labels)
 
                 # compute train loss
                 bs = input_ids.size(0)
@@ -185,17 +197,21 @@ class MCBertForPretraining(Trainer):
         """
         # Print settings to output file
         print("Settings:\n\
+               Model Type: {}\n\
                Visual Feature Dimension: {}\n\
                Spatial Size: {}\n\
-               Bert Hidden Dimension: {}\n\
+               LM Hidden Dimension: {}\n\
                Combined Feature Dimension: {}\n\
                Kernel Size: {}\n\
+               Dropout: {}\n\
                Learning Rate: {}\n\
                Warmup Proportion: {}\n\
+               N Classes: {}\n\
                Save Dir: {}".format(
-                   self.vis_feat_dim, self.spatial_size, self.hidden_dim,
-                   self.cmb_feat_dim, self.kernel_size, self.learning_rate,
-                   self.warmup_proportion, save_dir), flush=True)
+                   self.model_type, self.vis_feat_dim, self.spatial_size,
+                   self.lm_hidden_dim, self.cmb_feat_dim, self.kernel_size,
+                   self.dropout, self.learning_rate, self.warmup_proportion,
+                   self.n_classes, save_dir), flush=True)
 
         # concat validation datasets
         self.save_dir = save_dir
@@ -270,11 +286,11 @@ class MCBertForPretraining(Trainer):
         return loaders
 
     def _format_model_subdir(self):
-        subdir = "BMCB_vfd{}ss{}bhd{}cfd{}ks{}lr{}wp{}".\
-                format(self.vis_feat_dim, self.spatial_size,
-                       self.hidden_dim, self.cmb_feat_dim,
+        subdir = "BMCB_mt{}vfd{}ss{}bhd{}cfd{}ks{}lr{}wp{}do{}nc{}".\
+                format(self.model_type, self.vis_feat_dim, self.spatial_size,
+                       self.bert_hidden_dim, self.cmb_feat_dim,
                        self.kernel_size, self.learning_rate,
-                       self.warmup_proportion)
+                       self.warmup_proportion, self.dropout, self.n_classes)
         return subdir
 
     def save(self):
@@ -299,7 +315,7 @@ class MCBertForPretraining(Trainer):
                 torch.save({'state_dict': self.model.state_dict(),
                             'trainer_dict': self.__dict__}, file)
 
-    def load(self, model_dir, epoch, train_data_len):
+    def load(self, model_dir, epoch, train_data_len=None):
         """
         Load a previously trained model.
 

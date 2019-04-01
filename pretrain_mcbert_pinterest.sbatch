@@ -16,7 +16,7 @@ export LD_PRELOAD=$MKL_LIB/libmkl_rt.so
 PYTHONPATH=$PYTHONPATH:. python pretrain_mcbert_pinterest.py \
     --vis_feat_dim 2208 \
     --spatial_size 7 \
-    --bert_hidden_dim 768 \
+    --hidden_dim 768 \
     --cmb_feat_dim 16000 \
     --kernel_size 3 \
     --batch_size 8 \

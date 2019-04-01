@@ -5,8 +5,8 @@ import pandas as pd
 
 from pytorch_pretrained_bert.tokenization import load_vocab
 
-from mcbert.datasets.pinterest_pretrain import PinterestPretrainDataset
-from mcbert.trainers.mcbert_for_pretraining import MCBertForPretraining
+from mcbert.datasets.vqa import VQADataset
+from mcbert.trainers.vqa import VQATrainer
 
 
 if __name__ == '__main__':
@@ -29,16 +29,22 @@ if __name__ == '__main__':
     """
 
     ap = ArgumentParser()
+    ap.add_argument("-mt", "--model_type", default='mc-bert',
+                    help="Name of model to use.")
     ap.add_argument("-vd", "--vis_feat_dim", type=int, default=2208,
                     help="Dimension of the visual features.")
     ap.add_argument("-ss", "--spatial_size", type=int, default=7,
                     help="Spatial size of the visual features.")
-    ap.add_argument("-hd", "--hidden_dim", type=int, default=768,
+    ap.add_argument("-hd", "--lm_hidden_dim", type=int, default=768,
                     help="Hidden dimension in the BERT model.")
     ap.add_argument("-cd", "--cmb_feat_dim", type=int, default=8000,
                     help="Hidden dimension of the combined features.")
     ap.add_argument("-ks", "--kernel_size", type=int, default=3,
                     help="Kernel size for visual attention.")
+    ap.add_argument("-do", "--dropout", type=float, default=0.2,
+                    help="Dropout for classifier head.")
+    ap.add_argument("-nc", "--n_classes", type=int, default=3000,
+                    help="Number of classes to predict.")
     ap.add_argument("-bs", "--batch_size", type=int, default=2,
                     help="Batch size for optimization.")
     ap.add_argument("-lr", "--learning_rate", type=float, default=3e-5,
@@ -61,25 +67,27 @@ if __name__ == '__main__':
     args = vars(ap.parse_args())
 
     metadata = pd.read_csv(args['metadata_path'])
-    vocab = list(load_vocab(args['vocab_path']).keys())
-    train_dataset = PinterestPretrainDataset(metadata, vocab, split='train')
-    val_dataset = PinterestPretrainDataset(metadata, vocab, split='val')
+    train_dataset = VQADataset(metadata, split='train')
+    val_dataset = VQADataset(metadata, split='val')
 
-    mcbert = MCBertForPretraining(vis_feat_dim=args['vis_feat_dim'],
-                                  spatial_size=args['spatial_size'],
-                                  hidden_dim=args['hidden_dim'],
-                                  cmb_feat_dim=args['cmb_feat_dim'],
-                                  kernel_size=args['kernel_size'],
-                                  batch_size=args['batch_size'],
-                                  learning_rate=args['learning_rate'],
-                                  warmup_proportion=args['warmup_proportion'],
-                                  num_epochs=args['num_epochs'])
+    vqa = VQATrainer(model_type=args['model_type'],
+                     vis_feat_dim=args['vis_feat_dim'],
+                     spatial_size=args['spatial_size'],
+                     lm_hidden_dim=args['lm_hidden_dim'],
+                     dropout=args['dropout'],
+                     n_classes=args['n_classes'],
+                     cmb_feat_dim=args['cmb_feat_dim'],
+                     kernel_size=args['kernel_size'],
+                     batch_size=args['batch_size'],
+                     learning_rate=args['learning_rate'],
+                     warmup_proportion=args['warmup_proportion'],
+                     num_epochs=args['num_epochs'])
 
     if args['continue_path'] and args['continue_epoch']:
-        mcbert.load(
+        vqa.load(
             args['continue_path'], args['continue_epoch'], len(train_dataset))
         warm_start = True
     else:
         warm_start = False
 
-    mcbert.fit(train_dataset, val_dataset, args['save_dir'], warm_start)
+    vqa.fit(train_dataset, val_dataset, args['save_dir'], warm_start)

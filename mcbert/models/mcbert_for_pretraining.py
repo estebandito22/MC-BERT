@@ -12,19 +12,19 @@ class MCBertForPretrainingModel(nn.Module):
 
     """Class implementing MCBERT model for unsupervised pre-training."""
 
-    def __init__(self, vis_feat_dim=2208, spatial_size=7, bert_hidden_dim=768,
+    def __init__(self, vis_feat_dim=2208, spatial_size=7, hidden_dim=768,
                  cmb_feat_dim=16000, kernel_size=3):
         """Initialize SkipGramDistNet."""
         super(MCBertForPretrainingModel, self).__init__()
         self.vis_feat_dim = vis_feat_dim
         self.spatial_size = spatial_size
-        self.bert_hidden_dim = bert_hidden_dim
+        self.hidden_dim = hidden_dim
         self.cmb_feat_dim = cmb_feat_dim
         self.kernel_size = kernel_size
 
         self.mcbert_model = MCBertModel(
             vis_feat_dim=vis_feat_dim, spatial_size=spatial_size,
-            bert_hidden_dim=bert_hidden_dim, cmb_feat_dim=cmb_feat_dim,
+            hidden_dim=hidden_dim, cmb_feat_dim=cmb_feat_dim,
             kernel_size=kernel_size)
 
         version = "bert-base-cased"
