@@ -10,14 +10,14 @@ class BertTokenizer():
 
     def tokenize(self, sentence, max_len):
 
-        tokenized = ['[CLS]'] + [self.tokenizer.tokenize(x) for x in sentence.split(" ")]
+        tokenized = ['[CLS]'] + self.tokenizer.tokenize(sentence)
 
         if max_len is not None:
             tokenized= tokenized[:max_len]
             if len(tokenized) < max_len:
                 tokenized += ['[PAD]'] * (max_len - len(tokenized))
 
-                input_ids = self.tokenizer.convert_tokens_to_ids(tokenized)
+        input_ids = self.tokenizer.convert_tokens_to_ids(tokenized)
 
         token_type_ids = [0] * len(tokenized)
 

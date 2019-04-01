@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 
 
-class VQAPretrainDataset(Dataset):
+class VQADataset(Dataset):
 
     """Class to load Pinterest dataset."""
 
@@ -51,6 +51,10 @@ class VQAPretrainDataset(Dataset):
             s = s + size
         return batches
 
+    def _attn_mask(self, sentence):
+        #this relies
+        return [1 if x != 0 else 0 for x in sentence]
+
     def __len__(self):
         """Return length of dataset."""
         return len(self.metadata)
@@ -64,6 +68,8 @@ class VQAPretrainDataset(Dataset):
         # tokenize, add any special characters, and return indexes
         input_ids, token_type_ids = self.tokenizer(sentence, self.max_sent_len)
 
+        attention_mask = [self._attn_mask(x) for x in input_ids]
+
         input_ids = torch.tensor(input_ids).long()
         if token_type_ids is not None:
             token_type_ids = torch.tensor(token_type_ids).long()
@@ -76,4 +82,5 @@ class VQAPretrainDataset(Dataset):
         return {'input_ids': input_ids,
                 'token_type_ids': token_type_ids,
                 'label': label,
+                'attention_mask': attention_mask,
                 'vis_feats': vis_feats}
