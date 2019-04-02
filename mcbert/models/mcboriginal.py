@@ -42,21 +42,26 @@ class MCBOriginalModel(nn.Module):
         self.embeddings_mask.requires_grad = False
         self.embeddings_mask.resize_(vocab_size, 1)
 
+        if torch.cuda.is_available():
+            self.embeddings_mask = self.embeddings_mask.cuda()
+
         # mask pretrained embeddings
         self.glove.weight.register_hook(
             lambda grad: grad * self.embeddings_mask)
 
+        lstm_hidden_dim = int(hidden_dim / 2)
+
         self.embedding = nn.Embedding(vocab_size, embd_dim, padding_idx=0) #weight_filler=dict(type='uniform',min=-0.08,max=0.08))
-        self.layer1 = nn.LSTM(embd_dim*2, hidden_size=self.hidden_dim, batch_first=True) #weight_filler=dict(type='uniform',min=-0.08,max=0.08)
+        self.layer1 = nn.LSTM(embd_dim*2, hidden_size=lstm_hidden_dim, batch_first=True) #weight_filler=dict(type='uniform',min=-0.08,max=0.08)
         self.drop1 = nn.Dropout(0.3)
-        self.layer2 = nn.LSTM(self.hidden_dim, hidden_size=self.hidden_dim, batch_first=True)  # weight_filler=dict(type='uniform',min=-0.08,max=0.08)
+        self.layer2 = nn.LSTM(lstm_hidden_dim, hidden_size=lstm_hidden_dim, batch_first=True)  # weight_filler=dict(type='uniform',min=-0.08,max=0.08)
         self.drop2 = nn.Dropout(0.3)
 
         self.attention = AttentionMechanism(
             self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
-            self.kernel_size, self.hidden_dim*2)
+            self.kernel_size, self.hidden_dim)
 
-        self.compose = MCB(self.hidden_dim*2, self.hidden_dim*2)
+        self.compose = MCB(self.hidden_dim, self.hidden_dim)
 
     def forward(self, vis_feats, input_ids, token_type_ids=None,
                 attention_mask=None):
@@ -74,34 +79,26 @@ class MCBOriginalModel(nn.Module):
 
         # sequence_output: [batch_size, sequence_length, bert_hidden_dim]
         # pooled_output: [batch_size, bert_hidden_dim]
-        orig_pooled_output = torch.cat((hlayers1.transpose(0,1), hlayers2.transpose(0,1)), dim=2)
-        bert_sequence_output = torch.cat((l1out, l2out), dim=2)
+        #orig_pooled_output = torch.cat((hlayers1.transpose(0,1), hlayers2.transpose(0,1)), dim=2)
+        sequence_output = torch.cat((l1out, l2out), dim=2)
 
-        print("orig_pooled_output:", orig_pooled_output.shape)
-        print("vis_feats:", vis_feats.shape)
-        print("bert_sequence_output:", bert_sequence_output.shape)
+        #print("orig_pooled_output:", orig_pooled_output.shape)
+        #print("vis_feats:", vis_feats.shape)
+        #print("sequence_output:", sequence_output.shape)
 
-        # batch_size x sequence_length x bert_hidden_dim
-        sequence_vis_feats = self.attention(vis_feats, bert_sequence_output)
+        # batch_size x sequence_length x hidden_dim
+        sequence_vis_feats = self.attention(vis_feats, sequence_output)
 
         # batch_size x seqlen x cmb_feat_dim
         sequence_cmb_feats = self.compose(
-            bert_sequence_output, sequence_vis_feats)
+            sequence_output, sequence_vis_feats)
 
 
-        print("sequence_vis_feats:", sequence_vis_feats.shape)
+        #print("sequence_cmd_feats:", sequence_cmb_feats.shape)
 
-        # see  https://github.com/huggingface/pytorch-pretrained-BERT/blob/
-        # 7cc35c31040d8bdfcadc274c087d6a73c2036210/pytorch_pretrained_bert/
-        # modeling.py#L639
-        extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
-        extended_attention_mask = extended_attention_mask.float()
-        extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
+        
+        pooled_output = sequence_cmb_feats[:,0,:]
 
-        sequence_output = self.bert_layer(
-            sequence_cmb_feats, extended_attention_mask)
-        pooled_output = self.bert_pooler(sequence_cmb_feats)
-        # hack to complete graph of original Bert model
-        pooled_output = pooled_output + orig_pooled_output
+        #print("pooled_output:", pooled_output.shape)
 
-        return sequence_output, pooled_output
+        return sequence_cmb_feats, pooled_output

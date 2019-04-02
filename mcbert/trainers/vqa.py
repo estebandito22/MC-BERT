@@ -296,7 +296,7 @@ class VQATrainer(Trainer):
     def _format_model_subdir(self):
         subdir = "BMCB_mt{}vfd{}ss{}bhd{}cfd{}ks{}lr{}wp{}do{}nc{}".\
                 format(self.model_type, self.vis_feat_dim, self.spatial_size,
-                       self.bert_hidden_dim, self.cmb_feat_dim,
+                       self.lm_hidden_dim, self.cmb_feat_dim,
                        self.kernel_size, self.learning_rate,
                        self.warmup_proportion, self.dropout, self.n_classes)
         return subdir
