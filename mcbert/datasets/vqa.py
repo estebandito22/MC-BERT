@@ -64,7 +64,7 @@ class VQADataset(Dataset):
         """Return sample from dataset at index i."""
         vis_feats_path = self.metadata.iat[i, -1]
         sentence = self.metadata.iat[i, 1]
-        label = max(self.n_classes, self.metadata.iat[i, 2])
+        label = min(self.n_classes - 1, self.metadata.iat[i, 2])
 
         # tokenize, add any special characters, and return indexes
         input_ids, token_type_ids = self.tokenizer.tokenize(sentence, self.max_sent_len)
