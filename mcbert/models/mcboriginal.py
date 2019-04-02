@@ -91,16 +91,31 @@ class MCBOriginalModel(nn.Module):
         #orig_pooled_output = torch.cat((hlayers1.transpose(0,1), hlayers2.transpose(0,1)), dim=2)
         sequence_output = torch.cat((l1out, l2out), dim=2)
 
+        sequence_output_tile = sequence_output.unsqueeze(-1).unsqueeze(-1).repeat(1,1,1,self.spatial_size,self.spatial_size)
+
+        #print("sequence_output:", sequence_output.shape)
+        #print("vis_feats:", vis_feats.shape)
+
         # batch_size x seqlen x cmb_feat_dim
         blcf = self.compose(
-            sequence_output, vis_feats)
+            sequence_output_tile, vis_feats)
 
         # do a signed SQRT and drop
         blcf = self.signed_sqrt(blcf)
         blcf = self.drop3(blcf)
 
+        #print("blcf:", blcf.shape)
+        #print("vis_feats:", vis_feats.shape)
+
+        #just take first row, though I _think_ they took the first 2 and concatinate them??
+        blcf = blcf[:,:,:,:,0].squeeze(-1)
+        blcf = blcf[:,:,:,0].squeeze(-1)
+
         # batch_size x sequence_length x hidden_dim
         sequence_vis_feats = self.attention(vis_feats, blcf)
+
+        #print("sequence_output:", sequence_output.shape)
+        #print("sequence_vis_feats:", sequence_vis_feats.shape)
 
         # batch_size x seqlen x cmb_feat_dim
         sequence_cmb_feats = self.compose(
