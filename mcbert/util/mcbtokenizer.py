@@ -29,8 +29,9 @@ class MCBTokenizer():
                 toks += [MCBDict.PAD] * (max_len - len(toks))
 
         input_ids = self.indexize(toks)
+        token_type_ids = [0] * len(toks)
 
-        return input_ids, None
+        return input_ids, token_type_ids
 
 
 
@@ -84,7 +85,7 @@ class MCBDict:
         return len(self.id2token)
 
     def get_gloves(self):
-        return np.array(self.glove_embds)
+        return np.array(self.glove_embds).astype(np.float)
 
     def get_idx(self, tok):
         if tok in self.token2id:

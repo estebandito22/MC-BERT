@@ -3,7 +3,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=96000
-#SBATCH -t2:00:00
+#SBATCH -t24:00:00
 #SBATCH --output=slurm_featureize_coco%j.out
 
 ## Make sure we have access to HPC-managed libraries.

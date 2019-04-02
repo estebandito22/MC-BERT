@@ -11,10 +11,11 @@ from mcbert.util import berttokenizer
 if __name__ == '__main__':
     """
     Usage:
-        python pretrain_bertmcb_pinterest.py \
+        python train_vqa.py \
+            --model_type mc_bert \
             --vis_feat_dim 2208 \
             --spatial_size 7 \
-            --bert_hidden_dim 768 \
+            --lm_hidden_dim 768 \
             --cmb_feat_dim 16000 \
             --kernel_size 3 \
             --batch_size 1 \
@@ -65,14 +66,13 @@ if __name__ == '__main__':
                     help="Epoch of model for ward start.")
     args = vars(ap.parse_args())
 
-
     if args['model_type'] == 'mcb':
-        dict = mcbtokenizer(args['vocab'])
+        dict = mcbtokenizer.MCBDict(args['vocab_path'])
         tokenizer = mcbtokenizer.MCBTokenizer(dict)
     elif args['model_type'] == 'mc-bert':
         tokenizer = berttokenizer.BertTokenizer()
     else:
-        print("unknown model type")
+        print("unknown model type", args['model_type'])
         exit(1)
 
     metadata = pd.read_csv(args['metadata_path'])
@@ -91,7 +91,7 @@ if __name__ == '__main__':
                      learning_rate=args['learning_rate'],
                      warmup_proportion=args['warmup_proportion'],
                      num_epochs=args['num_epochs'],
-                     vocab=args['vocab'])
+                     vocab=args['vocab_path'])
 
     if args['continue_path'] and args['continue_epoch']:
         vqa.load(

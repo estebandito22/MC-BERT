@@ -51,9 +51,9 @@ class VQADataset(Dataset):
             s = s + size
         return batches
 
-    def _attn_mask(self, sentence):
+    def _attn_mask(self, tok):
         #this relies
-        return [1 if x != 0 else 0 for x in sentence]
+        return 1 if tok != 0 else 0 
 
     def __len__(self):
         """Return length of dataset."""
@@ -66,13 +66,13 @@ class VQADataset(Dataset):
         label = self.metadata.iat[i, 2]
 
         # tokenize, add any special characters, and return indexes
-        input_ids, token_type_ids = self.tokenizer(sentence, self.max_sent_len)
+        input_ids, token_type_ids = self.tokenizer.tokenize(sentence, self.max_sent_len)
 
         attention_mask = [self._attn_mask(x) for x in input_ids]
 
         input_ids = torch.tensor(input_ids).long()
-        if token_type_ids is not None:
-            token_type_ids = torch.tensor(token_type_ids).long()
+        token_type_ids = torch.tensor(token_type_ids).long()
+        attention_mask = torch.tensor(attention_mask).long()
 
         vis_feats = torch.load(vis_feats_path)
         vis_feats = vis_feats.unsqueeze(0).repeat(
@@ -81,6 +81,6 @@ class VQADataset(Dataset):
 
         return {'input_ids': input_ids,
                 'token_type_ids': token_type_ids,
-                'label': label,
+                'labels': label,
                 'attention_mask': attention_mask,
                 'vis_feats': vis_feats}

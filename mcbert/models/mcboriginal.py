@@ -1,9 +1,8 @@
-"""MCBERT model."""
+"""MCB_Orig model."""
 
 from torch import nn
 import torch.nn.functional as F
 import torch
-
 
 from mcbert.models.layers.visual.attention import AttentionMechanism
 from mcbert.models.layers.composition.mcb import MCB
@@ -13,8 +12,6 @@ class MCBOriginalModel(nn.Module):
 
     """Class implementing MCBERT Model with visual attention."""
 
-    #questions - what does the bert tokenizer return, what are token_type_ids
-    #where do I want to put loading the dictionary
 
     def __init__(self, vocab_file, vis_feat_dim=2208, spatial_size=7, embd_dim=300, hidden_dim = 2048,
                  cmb_feat_dim=16000, kernel_size=3, classification = True ):
@@ -34,7 +31,7 @@ class MCBOriginalModel(nn.Module):
 
         # override the word embeddings with pre-trained
         self.glove = nn.Embedding(vocab_size, embd_dim, padding_idx=0)
-        self.glove.weight = nn.Parameter(dict.get_gloves())
+        self.glove.weight = nn.Parameter(torch.tensor(dict.get_gloves()).float())
 
         # build mask  (Or, especially if we don't need EOS/SOS, just make OOV random
         self.embeddings_mask = torch.zeros(vocab_size).float()
@@ -50,35 +47,39 @@ class MCBOriginalModel(nn.Module):
             lambda grad: grad * self.embeddings_mask)
 
         self.embedding = nn.Embedding(vocab_size, embd_dim, padding_idx=0) #weight_filler=dict(type='uniform',min=-0.08,max=0.08))
-        self.layer1 = nn.LSTM(embd_dim*2, hidden_size=1024) #weight_filler=dict(type='uniform',min=-0.08,max=0.08)
+        self.layer1 = nn.LSTM(embd_dim*2, hidden_size=self.hidden_dim, batch_first=True) #weight_filler=dict(type='uniform',min=-0.08,max=0.08)
         self.drop1 = nn.Dropout(0.3)
-        self.layer2 = nn.LSTM(embd_dim*2, hidden_size=1024)  # weight_filler=dict(type='uniform',min=-0.08,max=0.08)
-        self.drop1 = nn.Dropout(0.3)
+        self.layer2 = nn.LSTM(self.hidden_dim, hidden_size=self.hidden_dim, batch_first=True)  # weight_filler=dict(type='uniform',min=-0.08,max=0.08)
+        self.drop2 = nn.Dropout(0.3)
 
         self.attention = AttentionMechanism(
             self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
-            self.kernel_size, self.bert_hidden_dim)
+            self.kernel_size, self.hidden_dim*2)
 
-        self.compose = MCB(self.bert_hidden_dim, self.bert_hidden_dim)
+        self.compose = MCB(self.hidden_dim*2, self.hidden_dim*2)
 
     def forward(self, vis_feats, input_ids, token_type_ids=None,
                 attention_mask=None):
         """Forward Pass."""
         embds = F.tanh(self.embedding(input_ids))
         gloves = self.glove(input_ids)
-        embds = torch.cat(embds, gloves)
-        # concat with 300dim glove embedding
-        l1out, hlayers1 = self.layer1(embds)
+        inpt = torch.cat((embds, gloves), dim=2)
+
+        l1out, (hlayers1, _) = self.layer1(inpt)
         l1out = self.drop1(l1out)
         hlayers1 = self.drop1(hlayers1)
-        l2out, hlayers2 = self.layer2(l1out)
+        l2out, (hlayers2, _) = self.layer2(l1out)
         l2out = self.drop2(l2out)
         hlayers2 = self.drop2(hlayers2)
 
         # sequence_output: [batch_size, sequence_length, bert_hidden_dim]
         # pooled_output: [batch_size, bert_hidden_dim]
-        bert_sequence_output = torch.cat(hlayers1, hlayers2)
-        orig_pooled_output = torch.cat(l1out, l2out)
+        orig_pooled_output = torch.cat((hlayers1.transpose(0,1), hlayers2.transpose(0,1)), dim=2)
+        bert_sequence_output = torch.cat((l1out, l2out), dim=2)
+
+        print("orig_pooled_output:", orig_pooled_output.shape)
+        print("vis_feats:", vis_feats.shape)
+        print("bert_sequence_output:", bert_sequence_output.shape)
 
         # batch_size x sequence_length x bert_hidden_dim
         sequence_vis_feats = self.attention(vis_feats, bert_sequence_output)
@@ -86,6 +87,9 @@ class MCBOriginalModel(nn.Module):
         # batch_size x seqlen x cmb_feat_dim
         sequence_cmb_feats = self.compose(
             bert_sequence_output, sequence_vis_feats)
+
+
+        print("sequence_vis_feats:", sequence_vis_feats.shape)
 
         # see  https://github.com/huggingface/pytorch-pretrained-BERT/blob/
         # 7cc35c31040d8bdfcadc274c087d6a73c2036210/pytorch_pretrained_bert/
