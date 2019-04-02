@@ -76,8 +76,8 @@ if __name__ == '__main__':
         exit(1)
 
     metadata = pd.read_csv(args['metadata_path'])
-    train_dataset = VQADataset(metadata, tokenizer, split='train')
-    val_dataset = VQADataset(metadata, tokenizer, split='val')
+    train_dataset = VQADataset(metadata, tokenizer, args['n_classes'], split='train')
+    val_dataset = VQADataset(metadata, tokenizer, args['n_classes'], split='val')
 
     vqa = VQATrainer(model_type=args['model_type'],
                      vis_feat_dim=args['vis_feat_dim'],

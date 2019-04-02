@@ -12,7 +12,7 @@ class VQADataset(Dataset):
 
     """Class to load Pinterest dataset."""
 
-    def __init__(self, metadata, tokenizer, split='train', max_sent_len=64):
+    def __init__(self, metadata, tokenizer, n_classes, split='train', max_sent_len=64):
         """
         Initialize PinterestDataset.
         Args
@@ -23,6 +23,7 @@ class VQADataset(Dataset):
         self.max_sent_len = max_sent_len
         self.tokenizer = tokenizer
         self._train_test_split()
+        self.n_classes = n_classes
 
     def _train_test_split(self):
         X_train, X_val_test = train_test_split(
@@ -63,7 +64,7 @@ class VQADataset(Dataset):
         """Return sample from dataset at index i."""
         vis_feats_path = self.metadata.iat[i, -1]
         sentence = self.metadata.iat[i, 1]
-        label = self.metadata.iat[i, 2]
+        label = max(self.n_classes, self.metadata.iat[i, 2])
 
         # tokenize, add any special characters, and return indexes
         input_ids, token_type_ids = self.tokenizer.tokenize(sentence, self.max_sent_len)
