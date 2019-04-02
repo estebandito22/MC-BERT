@@ -57,11 +57,20 @@ class MCBOriginalModel(nn.Module):
         self.layer2 = nn.LSTM(lstm_hidden_dim, hidden_size=lstm_hidden_dim, batch_first=True)  # weight_filler=dict(type='uniform',min=-0.08,max=0.08)
         self.drop2 = nn.Dropout(0.3)
 
+        self.drop3 = nn.Dropout(0.1)
+        self.drop4 = nn.Dropout(0.1)
+
+
         self.attention = AttentionMechanism(
             self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
             self.kernel_size, self.hidden_dim)
 
         self.compose = MCB(self.hidden_dim, self.hidden_dim)
+
+        # signed sqrt
+
+    def signed_sqrt(self, x):
+        return torch.mul(torch.sign(x), torch.sqrt(torch.abs(x) + 1e-12))
 
     def forward(self, vis_feats, input_ids, token_type_ids=None,
                 attention_mask=None):
@@ -82,22 +91,29 @@ class MCBOriginalModel(nn.Module):
         #orig_pooled_output = torch.cat((hlayers1.transpose(0,1), hlayers2.transpose(0,1)), dim=2)
         sequence_output = torch.cat((l1out, l2out), dim=2)
 
-        #print("orig_pooled_output:", orig_pooled_output.shape)
-        #print("vis_feats:", vis_feats.shape)
-        #print("sequence_output:", sequence_output.shape)
+        # batch_size x seqlen x cmb_feat_dim
+        blcf = self.compose(
+            sequence_output, vis_feats)
+
+        # do a signed SQRT and drop
+        blcf = self.signed_sqrt(blcf)
+        blcf = self.drop3(blcf)
 
         # batch_size x sequence_length x hidden_dim
-        sequence_vis_feats = self.attention(vis_feats, sequence_output)
+        sequence_vis_feats = self.attention(vis_feats, blcf)
 
         # batch_size x seqlen x cmb_feat_dim
         sequence_cmb_feats = self.compose(
             sequence_output, sequence_vis_feats)
 
-
         #print("sequence_cmd_feats:", sequence_cmb_feats.shape)
 
         
         pooled_output = sequence_cmb_feats[:,0,:]
+
+        #do another signed SQRT and drop
+        pooled_output = self.signed_sqrt(pooled_output)
+        pooled_output = self.drop4(pooled_output)
 
         #print("pooled_output:", pooled_output.shape)
 
