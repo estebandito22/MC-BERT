@@ -43,6 +43,8 @@ if __name__ == '__main__':
                     help="Kernel size for visual attention.")
     ap.add_argument("-do", "--dropout", type=float, default=0.2,
                     help="Dropout for classifier head.")
+    ap.add_argument("-sl", "--max_sent_len", type=int, default=64,
+                    help="the max sentence length.")
     ap.add_argument("-nc", "--n_classes", type=int, default=3000,
                     help="Number of classes to predict.")
     ap.add_argument("-bs", "--batch_size", type=int, default=2,
@@ -79,8 +81,8 @@ if __name__ == '__main__':
         print("unknown model type", args['model_type'])
         exit(1)
 
-    train_dataset = VQADataset(pd.read_csv(args['train_data_path']), tokenizer, args['n_classes'], split='train')
-    val_dataset = VQADataset(pd.read_csv(args['val_data_path']), tokenizer, args['n_classes'], split='val')
+    train_dataset = VQADataset(pd.read_csv(args['train_data_path']), tokenizer, args['n_classes'], split='train', max_sent_len=args['max_sent_len'])
+    val_dataset = VQADataset(pd.read_csv(args['val_data_path']), tokenizer, args['n_classes'], split='val', max_sent_len=args['max_sent_len'])
 
     vqa = VQATrainer(model_type=args['model_type'],
                      vis_feat_dim=args['vis_feat_dim'],
