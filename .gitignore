@@ -1,5 +1,7 @@
 #Some projects stuff
 pytorch_pretrained_bert
+slurm*.out
+saved_models
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
