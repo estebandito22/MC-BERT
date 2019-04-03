@@ -20,6 +20,7 @@ PYTHONPATH=$PYTHONPATH:. python train_vqa.py \
     --learning_rate 3e-5 \
     --num_epochs 50 \
     --n_classes 29332 \
-    --metadata_path /beegfs/cdr380/VQA/mscoco_train2014_featurized.csv \
+    --train_data_path /beegfs/cdr380/VQA/mscoco_train2014_featurized.csv \
+    --val_data_path /beegfs/cdr380/VQA/mscoco_val2014_featurized.csv \
     --vocab_path /beegfs/swc419/MC-BERT/data/bert-base-cased-vocab.txt \
     --save_dir saved_models/vqa_mcbert
