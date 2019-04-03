@@ -3,8 +3,8 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=96000
-#SBATCH -t2:00:00
-#SBATCH --output=slurm_vqa_orig_train%j.out
+#SBATCH -t48:00:00
+#SBATCH --output=slurm_vqa_mcbert_train%j.out
 
 #export LD_PRELOAD=$MKL_LIB/libmkl_rt.so
 
