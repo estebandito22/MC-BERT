@@ -91,7 +91,12 @@ class MCBOriginalModel(nn.Module):
         hlayers = hlayers.transpose(0, 1)
         #print("hlayers:", hlayers.shape)
         #hlayers: torch.Size([4, 2, 1104])
-        orig_pooled_output = torch.cat((hlayers[:,0,:].unsqueeze(1),hlayers[:,1,:].unsqueeze(1)), dim=2)
+        lstmhids = []
+        for i in range(hlayers.shape[1]):
+            lstmhids.append(hlayers[:,i,:].unsqueeze(1))
+        
+        #orig_pooled_output = torch.cat((hlayers[:,0,:].unsqueeze(1),hlayers[:,1,:].unsqueeze(1)), dim=2)
+        orig_pooled_output = torch.cat(lstmhids, dim=2)
 
         #print("l1out:", l1out.shape, "l1hid:", hlayers1.shape)
         #sequence_output = torch.cat((l1out, l2out), dim=2)
