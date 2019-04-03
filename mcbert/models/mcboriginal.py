@@ -76,7 +76,7 @@ class MCBOriginalModel(nn.Module):
         gloves = self.glove(input_ids)
         inpt = torch.cat((embds, gloves), dim=2)
 
-        l1out, (hlayers, _) = self.layer1(inpt)
+        lout, (hlayers, _) = self.lstm(inpt)
         #l1out, (hlayers1, _) = self.layer1(inpt)
 #        l1out = self.drop(l1out)
         #hlayers1 = self.drop(hlayers1)
@@ -89,8 +89,9 @@ class MCBOriginalModel(nn.Module):
         #orig_pooled_output = torch.cat((hlayers1.transpose(0,1), hlayers2.transpose(0,1)), dim=2)
 
         hlayers = hlayers.transpose(0, 1)
-        print("hlayers:", hlayers.shape)
-        orig_pooled_output = torch.cat((hlayers[0,:],hlayers[1,:]), dim=2)
+        #print("hlayers:", hlayers.shape)
+        #hlayers: torch.Size([4, 2, 1104])
+        orig_pooled_output = torch.cat((hlayers[:,0,:].unsqueeze(1),hlayers[:,1,:].unsqueeze(1)), dim=2)
 
         #print("l1out:", l1out.shape, "l1hid:", hlayers1.shape)
         #sequence_output = torch.cat((l1out, l2out), dim=2)
