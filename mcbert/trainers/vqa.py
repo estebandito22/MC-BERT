@@ -71,13 +71,16 @@ class VQATrainer(Trainer):
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, classification=True)
-
         elif self.model_type == 'mcb':
             mcb_model = MCBOriginalModel(self.vocab,
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
-                kernel_size=self.kernel_size, classification=True)
-
+                kernel_size=self.kernel_size, bidirectional=False,classification=True)
+        elif self.model_type == 'mcb-bi':
+            mcb_model = MCBOriginalModel(self.vocab,
+                vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
+                hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
+                kernel_size=self.kernel_size, bidirectional=True, classification=True)
         else:
             raise ValueError("Did not recognize model type!")
 

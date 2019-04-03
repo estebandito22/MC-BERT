@@ -14,7 +14,7 @@ class MCBOriginalModel(nn.Module):
 
 
     def __init__(self, vocab_file, vis_feat_dim=2208, spatial_size=7, embd_dim=300, hidden_dim = 2048,
-                 cmb_feat_dim=16000, kernel_size=3, classification = True ):
+                 cmb_feat_dim=16000, kernel_size=3, bidirectional=False, classification = True ):
 
 
         """Initialize MCBertModel."""
@@ -37,13 +37,9 @@ class MCBOriginalModel(nn.Module):
         self.glove.weight = nn.Parameter(torch.tensor(dict.get_gloves()).float())
 
         # build mask  (Or, especially if we don't need EOS/SOS, just make OOV random
-        self.embeddings_mask = torch.zeros(vocab_size).float()
-        self.embeddings_mask[0] = 1
-        self.embeddings_mask[1] = 1
-        self.embeddings_mask[2] = 1
-        self.embeddings_mask[3] = 1
-        self.embeddings_mask.requires_grad = False
-        self.embeddings_mask.resize_(vocab_size, 1)
+        self.embeddings_mask = torch.zeros(vocab_size, requires_grad=False).float()
+        self.embeddings_mask[0:4] = 1
+        #self.embeddings_mask.resize_(vocab_size, 1)
 
         if torch.cuda.is_available():
             self.embeddings_mask = self.embeddings_mask.cuda()
@@ -52,13 +48,13 @@ class MCBOriginalModel(nn.Module):
         self.glove.weight.register_hook(
             lambda grad: grad * self.embeddings_mask)
 
-        lstm_hidden_dim = int(hidden_dim / 2)
+        #each layer (or direction) gets its own part
+        lstm_hidden_dim = int(hidden_dim / 2 / (2 if bidirectional else 1))
 
         self.embedding = nn.Embedding(vocab_size, embd_dim, padding_idx=0) #weight_filler=dict(type='uniform',min=-0.08,max=0.08))
-        self.layer1 = nn.LSTM(embd_dim*2, hidden_size=lstm_hidden_dim, batch_first=True) #weight_filler=dict(type='uniform',min=-0.08,max=0.08)
-        self.drop = nn.Dropout(0.3)
-        self.layer2 = nn.LSTM(lstm_hidden_dim, hidden_size=lstm_hidden_dim, batch_first=True)  # weight_filler=dict(type='uniform',min=-0.08,max=0.08)
-
+        self.lstm = nn.LSTM(embd_dim*2, num_layers=2, hidden_size=lstm_hidden_dim, batch_first=True, bidirectional=bidirectional, dropout=0.3) #weight_filler=dict(type='uniform',min=-0.08,max=0.08)
+        #self.drop = nn.Dropout(0.3)
+        #self.layer2 = nn.LSTM(lstm_hidden_dim, hidden_size=lstm_hidden_dim, batch_first=True)  # weight_filler=dict(type='uniform',min=-0.08,max=0.08)
 
         self.attention = AttentionMechanism(
             self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
@@ -71,23 +67,35 @@ class MCBOriginalModel(nn.Module):
     def forward(self, vis_feats, input_ids, token_type_ids=None,
                 attention_mask=None):
         """Forward Pass."""
+
+        #bit of a hack, but we pass the length through in the token_type_ids
+        #just need one per example
+        lengths = token_type_ids[:,[0]].squeeze(-1)
+
         embds = F.tanh(self.embedding(input_ids))
         gloves = self.glove(input_ids)
         inpt = torch.cat((embds, gloves), dim=2)
 
-        l1out, (hlayers1, _) = self.layer1(inpt)
+        l1out, (hlayers, _) = self.layer1(inpt)
+        #l1out, (hlayers1, _) = self.layer1(inpt)
 #        l1out = self.drop(l1out)
-        hlayers1 = self.drop(hlayers1)
-        l2out, (hlayers2, _) = self.layer2(l1out)
+        #hlayers1 = self.drop(hlayers1)
+        #l2out, (hlayers2, _) = self.layer2(l1out)
         #l2out = self.drop(l2out)
-        hlayers2 = self.drop(hlayers2)
+        #hlayers2 = self.drop(hlayers2)
 
         # sequence_output: [batch_size, sequence_length, bert_hidden_dim]
         # pooled_output: [batch_size, bert_hidden_dim]
-        orig_pooled_output = torch.cat((hlayers1.transpose(0,1), hlayers2.transpose(0,1)), dim=2)
+        #orig_pooled_output = torch.cat((hlayers1.transpose(0,1), hlayers2.transpose(0,1)), dim=2)
+
+        hlayers = hlayers.transpose(0, 1)
+        print("hlayers:", hlayers.shape)
+        orig_pooled_output = torch.cat((hlayers[0,:],hlayers[1,:]), dim=2)
+
         #print("l1out:", l1out.shape, "l1hid:", hlayers1.shape)
         #sequence_output = torch.cat((l1out, l2out), dim=2)
 
+        #some tasks require the visual features to be tiled, but we just need a single copy here
         vis_feats = vis_feats[:, 0, :, :].unsqueeze(1)
 
 

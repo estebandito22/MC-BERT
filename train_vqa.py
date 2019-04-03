@@ -22,10 +22,10 @@ if __name__ == '__main__':
             --learning_rate 3e-5 \
             --warmup_proportion 0.1 \
             --num_epochs 50 \
-            --metadata_path /beegfs/swc419/pinterest40/allimgs_chunk_1_featurized.csv \
+            --train_data_path /beegfs/cdr380/VQA/mscoco_train2014_featurized.csv \
+            --val_data_path /beegfs/cdr380/VQA/mscoco_val2014_featurized.csv \
             --vocab_path /beegfs/swc419/MC-BERT/data/bert-base-cased-vocab.txt \
             --save_dir pretrain_pin_models
-
     """
 
     ap = ArgumentParser()
@@ -53,7 +53,11 @@ if __name__ == '__main__':
                     help="Proportion of training steps for warmup.")
     ap.add_argument("-ne", "--num_epochs", type=int, default=5,
                     help="Number of epochs for optimization.")
-    ap.add_argument("-mp", "--metadata_path",
+    ap.add_argument("-td", "--train_data_path",
+                    help="Location of metadata for training.")
+    ap.add_argument("-vd", "--val_data_path",
+                    help="Location of metadata for training.")
+    ap.add_argument("-fd", "--test_data_path",
                     help="Location of metadata for training.")
     ap.add_argument("-vp", "--vocab_path",
                     help="Location of vocab for training.")
@@ -66,7 +70,7 @@ if __name__ == '__main__':
                     help="Epoch of model for ward start.")
     args = vars(ap.parse_args())
 
-    if args['model_type'] == 'mcb':
+    if args['model_type'].startswith('mcb'):
         dict = mcbtokenizer.MCBDict(args['vocab_path'])
         tokenizer = mcbtokenizer.MCBTokenizer(dict)
     elif args['model_type'] == 'mc-bert':
@@ -75,9 +79,8 @@ if __name__ == '__main__':
         print("unknown model type", args['model_type'])
         exit(1)
 
-    metadata = pd.read_csv(args['metadata_path'])
-    train_dataset = VQADataset(metadata, tokenizer, args['n_classes'], split='train')
-    val_dataset = VQADataset(metadata, tokenizer, args['n_classes'], split='val')
+    train_dataset = VQADataset(pd.read_csv(args['train_data_path']), tokenizer, args['n_classes'], split='train')
+    val_dataset = VQADataset(pd.read_csv(args['val_data_path']), tokenizer, args['n_classes'], split='val')
 
     vqa = VQATrainer(model_type=args['model_type'],
                      vis_feat_dim=args['vis_feat_dim'],

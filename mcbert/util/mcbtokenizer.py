@@ -20,16 +20,20 @@ class MCBTokenizer():
     def indexize(self, toks):
         return [self.dict.get_idx(tok) for tok in toks]
 
+    #will probably need to modify this for text generation
     def tokenize(self, sentence, max_len=None):
         toks = self.split(sentence)
 
+        length = len(toks)
+
         if max_len is not None:
+            length = min(length, max_len)
             toks= toks[:max_len]
             if len(toks) < max_len:
                 toks += [MCBDict.PAD] * (max_len - len(toks))
 
         input_ids = self.indexize(toks)
-        token_type_ids = [0] * len(toks)
+        token_type_ids = [length] * len(toks)
 
         return input_ids, token_type_ids
 

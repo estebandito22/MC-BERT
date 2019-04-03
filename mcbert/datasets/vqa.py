@@ -22,9 +22,12 @@ class VQADataset(Dataset):
         self.split = split
         self.max_sent_len = max_sent_len
         self.tokenizer = tokenizer
-        self._train_test_split()
         self.n_classes = n_classes
 
+        # VQA is pre-split
+        # self._train_test_split()
+
+    '''
     def _train_test_split(self):
         X_train, X_val_test = train_test_split(
             self.metadata, test_size=0.1, random_state=10)
@@ -39,6 +42,7 @@ class VQADataset(Dataset):
             self.metadata = X_test
         else:
             raise ValueError("split must be 'train', 'val' or 'test'.")
+    '''
 
     def get_batches(self, k=10):
         """Return index batches of inputs."""
