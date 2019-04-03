@@ -55,7 +55,7 @@ if __name__ == '__main__':
                     help="Number of epochs for optimization.")
     ap.add_argument("-td", "--train_data_path",
                     help="Location of metadata for training.")
-    ap.add_argument("-vd", "--val_data_path",
+    ap.add_argument("-dd", "--val_data_path",
                     help="Location of metadata for training.")
     ap.add_argument("-fd", "--test_data_path",
                     help="Location of metadata for training.")
