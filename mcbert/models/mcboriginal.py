@@ -72,30 +72,31 @@ class MCBOriginalModel(nn.Module):
         #just need one per example
         lengths = token_type_ids[:,[0]].squeeze(-1)
 
+        #combine our two embeddings
         embds = F.tanh(self.embedding(input_ids))
         gloves = self.glove(input_ids)
         inpt = torch.cat((embds, gloves), dim=2)
 
-        lout, (hlayers, _) = self.lstm(inpt)
-        #l1out, (hlayers1, _) = self.layer1(inpt)
-#        l1out = self.drop(l1out)
-        #hlayers1 = self.drop(hlayers1)
-        #l2out, (hlayers2, _) = self.layer2(l1out)
-        #l2out = self.drop(l2out)
-        #hlayers2 = self.drop(hlayers2)
+        #get our sort order and sort our inputs
+        order = torch.argsort(lengths, descending=True)
+        restore = torch.argsort(order)
+        lengths = lengths[order]
+        inpt = inpt[order]
+
+        pack = torch.nn.utils.rnn.pack_padded_sequence(inpt, lengths, batch_first=True)
+        lout, (hlayers, _) = self.lstm(pack)
 
         # sequence_output: [batch_size, sequence_length, bert_hidden_dim]
         # pooled_output: [batch_size, bert_hidden_dim]
-        #orig_pooled_output = torch.cat((hlayers1.transpose(0,1), hlayers2.transpose(0,1)), dim=2)
 
         hlayers = hlayers.transpose(0, 1)
+
+        hlayers = hlayers[restore]
+        
         #print("hlayers:", hlayers.shape)
-        #hlayers: torch.Size([4, 2, 1104])
         lstmhids = []
         for i in range(hlayers.shape[1]):
             lstmhids.append(hlayers[:,i,:].unsqueeze(1))
-        
-        #orig_pooled_output = torch.cat((hlayers[:,0,:].unsqueeze(1),hlayers[:,1,:].unsqueeze(1)), dim=2)
         orig_pooled_output = torch.cat(lstmhids, dim=2)
 
         #print("l1out:", l1out.shape, "l1hid:", hlayers1.shape)
