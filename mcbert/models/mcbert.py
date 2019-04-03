@@ -37,6 +37,8 @@ class MCBertModel(nn.Module):
 
         self.compose = MCB(self.hidden_dim, self.hidden_dim)
 
+        self.output_dim = self.hidden_dim
+
     def forward(self, vis_feats, input_ids, token_type_ids=None,
                 attention_mask=None):
         """Forward Pass."""

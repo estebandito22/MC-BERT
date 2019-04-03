@@ -25,6 +25,9 @@ class MCBOriginalModel(nn.Module):
         self.cmb_feat_dim = cmb_feat_dim
         self.kernel_size = kernel_size
 
+        #hint to whatever head uses us - 
+        self.output_dim = cmb_feat_dim
+
         #probably want to do this elsewhere and pass in but...
         dict = MCBDict(metadata=vocab_file)
         vocab_size = dict.size()
@@ -53,24 +56,17 @@ class MCBOriginalModel(nn.Module):
 
         self.embedding = nn.Embedding(vocab_size, embd_dim, padding_idx=0) #weight_filler=dict(type='uniform',min=-0.08,max=0.08))
         self.layer1 = nn.LSTM(embd_dim*2, hidden_size=lstm_hidden_dim, batch_first=True) #weight_filler=dict(type='uniform',min=-0.08,max=0.08)
-        self.drop1 = nn.Dropout(0.3)
+        self.drop = nn.Dropout(0.3)
         self.layer2 = nn.LSTM(lstm_hidden_dim, hidden_size=lstm_hidden_dim, batch_first=True)  # weight_filler=dict(type='uniform',min=-0.08,max=0.08)
-        self.drop2 = nn.Dropout(0.3)
-
-        self.drop3 = nn.Dropout(0.1)
-        self.drop4 = nn.Dropout(0.1)
 
 
         self.attention = AttentionMechanism(
             self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
             self.kernel_size, self.hidden_dim)
 
-        self.compose = MCB(self.hidden_dim, self.hidden_dim)
+        self.compose = MCB(self.hidden_dim, self. cmb_feat_dim)
 
         # signed sqrt
-
-    def signed_sqrt(self, x):
-        return torch.mul(torch.sign(x), torch.sqrt(torch.abs(x) + 1e-12))
 
     def forward(self, vis_feats, input_ids, token_type_ids=None,
                 attention_mask=None):
@@ -80,56 +76,39 @@ class MCBOriginalModel(nn.Module):
         inpt = torch.cat((embds, gloves), dim=2)
 
         l1out, (hlayers1, _) = self.layer1(inpt)
-        l1out = self.drop1(l1out)
-        hlayers1 = self.drop1(hlayers1)
+#        l1out = self.drop(l1out)
+        hlayers1 = self.drop(hlayers1)
         l2out, (hlayers2, _) = self.layer2(l1out)
-        l2out = self.drop2(l2out)
-        hlayers2 = self.drop2(hlayers2)
+        #l2out = self.drop(l2out)
+        hlayers2 = self.drop(hlayers2)
 
         # sequence_output: [batch_size, sequence_length, bert_hidden_dim]
         # pooled_output: [batch_size, bert_hidden_dim]
-        #orig_pooled_output = torch.cat((hlayers1.transpose(0,1), hlayers2.transpose(0,1)), dim=2)
-        sequence_output = torch.cat((l1out, l2out), dim=2)
+        orig_pooled_output = torch.cat((hlayers1.transpose(0,1), hlayers2.transpose(0,1)), dim=2)
+        #print("l1out:", l1out.shape, "l1hid:", hlayers1.shape)
+        #sequence_output = torch.cat((l1out, l2out), dim=2)
 
-        sequence_output_tile = sequence_output.unsqueeze(-1).unsqueeze(-1).repeat(1,1,1,self.spatial_size,self.spatial_size)
+        vis_feats = vis_feats[:, 0, :, :].unsqueeze(1)
 
-        #print("sequence_output:", sequence_output.shape)
-        #print("vis_feats:", vis_feats.shape)
 
-        # batch_size x seqlen x cmb_feat_dim
-        blcf = self.compose(
-            sequence_output_tile, vis_feats)
-
-        # do a signed SQRT and drop
-        blcf = self.signed_sqrt(blcf)
-        blcf = self.drop3(blcf)
-
-        #print("blcf:", blcf.shape)
-        #print("vis_feats:", vis_feats.shape)
-
-        #just take first row, though I _think_ they took the first 2 and concatinate them??
-        blcf = blcf[:,:,:,:,0].squeeze(-1)
-        blcf = blcf[:,:,:,0].squeeze(-1)
+        #print("before attn: sequence_output:", sequence_output.shape)
+        #print("before attn: vis_feats:", vis_feats.shape)
+        #print("before attn: orig_pooled_output", orig_pooled_output.shape)
 
         # batch_size x sequence_length x hidden_dim
-        sequence_vis_feats = self.attention(vis_feats, blcf)
+        sequence_vis_feats = self.attention(vis_feats, orig_pooled_output)
 
-        #print("sequence_output:", sequence_output.shape)
-        #print("sequence_vis_feats:", sequence_vis_feats.shape)
+        #$print("after attn: sequence_output:", sequence_output.shape)
+        #print("affter attn: sequence_vis_feats:", sequence_vis_feats.shape)
 
         # batch_size x seqlen x cmb_feat_dim
         sequence_cmb_feats = self.compose(
-            sequence_output, sequence_vis_feats)
+            orig_pooled_output, sequence_vis_feats)
 
-        #print("sequence_cmd_feats:", sequence_cmb_feats.shape)
+        #print("after MCB: sequence_cmb_feats:", sequence_cmb_feats.shape)
 
-        
-        pooled_output = sequence_cmb_feats[:,0,:]
+        pooled_output = sequence_cmb_feats.squeeze(1)#[:,-1,:]
 
-        #do another signed SQRT and drop
-        pooled_output = self.signed_sqrt(pooled_output)
-        pooled_output = self.drop4(pooled_output)
-
-        #print("pooled_output:", pooled_output.shape)
+        #print("pooled_output", pooled_output.shape)
 
         return sequence_cmb_feats, pooled_output

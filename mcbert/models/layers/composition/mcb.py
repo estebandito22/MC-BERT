@@ -93,6 +93,8 @@ class MCB(nn.Module):
             self.vis_s = self.vis_s.cuda()
             self.txt_s = self.txt_s.cuda()
 
+        self.drop = nn.Dropout(0.1)
+
     def forward(self, vis_feats, txt_feats):
         """Forward Pass."""
         # batch size x seqlen x feat_dim (x height x width)
@@ -143,6 +145,16 @@ class MCB(nn.Module):
         cmb_feats = cmb_feats.permute(0, 1, 4, 2, 3).contiguous()
 
         # batch size x seqlen x cmb_feat_dim (x height x width)
-        if not squeeze:
-            return cmb_feats
-        return cmb_feats.view(bs, seqlen, self.cmb_feat_dim)
+
+        if squeeze:
+            cmb_feats = cmb_feats.view(bs, seqlen, self.cmb_feat_dim)
+
+        cmb_feats = self.signed_sqrt(cmb_feats)
+        cmb_feats = nn.functional.normalize(cmb_feats, p=2, dim=2)
+        cmb_feats = self.drop(cmb_feats)
+
+        return cmb_feats
+
+    def signed_sqrt(self, x):
+        return torch.mul(torch.sign(x), torch.sqrt(torch.abs(x) + 1e-12))
+

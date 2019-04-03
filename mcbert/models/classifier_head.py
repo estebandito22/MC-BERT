@@ -16,7 +16,7 @@ class ClassifierHeadModel(nn.Module):
         self.n_classes = n_classes
 
         self.drop = nn.Dropout(p=self.dropout)
-        self.cls = nn.Linear(self.mcb_model.hidden_dim, self.n_classes)
+        self.cls = nn.Linear(self.mcb_model.output_dim, self.n_classes)
 
     def forward(self, vis_feats, input_ids, token_type_ids=None,
                 attention_mask=None, labels=None):
