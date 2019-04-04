@@ -117,6 +117,8 @@ class VQATrainer(Trainer):
         self.model.train()
         train_loss = 0
         samples_processed = 0
+        correct = 0
+        loss_fct = torch.nn.NLLoss()
 
         for batch_samples in tqdm(loader):
 
@@ -139,27 +141,36 @@ class VQATrainer(Trainer):
 
             # forward pass
             self.model.zero_grad()
-            loss = self.model(
-                vis_feats, input_ids, token_type_ids, attention_mask, labels)
+            #let's calculate loss and accuracy out here
+            logits = self.model(
+                vis_feats, input_ids, token_type_ids, attention_mask, None)
+
+            probs = torch.nn.functional.softmax(logits, dim=1)
+            loss = loss_fct(probs, labels)
 
             # backward pass
             loss.backward()
             self.optimizer.step()
 
-            # compute train loss
+            # compute train loss and acc
+            predicts = torch.argmax(probs, dim=1)
+            correct += torch.sum(predicts == labels).item()
             bs = input_ids.size(0)
             samples_processed += bs
             train_loss += loss.item() * bs
 
         train_loss /= samples_processed
+        acc = correct / samples_processed
 
-        return train_loss
+        return train_loss, acc
 
     def _eval_epoch(self, loader):
         """Eval epoch."""
         self.model.eval()
         val_loss = 0
         samples_processed = 0
+        correct = 0
+        loss_fct = torch.nn.NLLoss()
 
         with torch.no_grad():
             for batch_samples in tqdm(loader):
@@ -182,18 +193,25 @@ class VQATrainer(Trainer):
                     vis_feats = vis_feats.cuda()
 
                 # forward pass
-                loss = self.model(
-                    vis_feats, input_ids, token_type_ids, attention_mask,
-                    labels)
+                # let's calculate loss and accuracy out here
+                logits = self.model(
+                    vis_feats, input_ids, token_type_ids, attention_mask, None)
 
-                # compute train loss
+                probs = torch.nn.functional.softmax(logits, dim=1)
+                loss = loss_fct(probs, labels)
+
+                # compute train loss and acc
+                predicts = torch.argmax(probs, dim=1)
+                correct += torch.sum(predicts == labels).item()
+
                 bs = input_ids.size(0)
                 samples_processed += bs
                 val_loss += loss.item() * bs
 
             val_loss /= samples_processed
+            acc = correct / samples_processed
 
-        return val_loss
+        return val_loss, acc
 
     def fit(self, train_dataset, val_dataset, save_dir, warm_start=False):
         """
@@ -245,15 +263,15 @@ class VQATrainer(Trainer):
             for train_loader in train_loaders:
                 if self.nn_epoch > 0:
                     print("\nInitializing train epoch...", flush=True)
-                    train_loss = self._train_epoch(train_loader)
+                    train_loss, train_acc  = self._train_epoch(train_loader)
 
                 print("\nInitializing val epoch...", flush=True)
-                val_loss = self._eval_epoch(val_loader)
+                val_loss, val_acc = self._eval_epoch(val_loader)
 
                 # report
-                print("\nEpoch: [{}/{}]\tTrain Loss: {}\tVal Loss: {}".format(
-                    self.nn_epoch, self.num_epochs, np.round(train_loss, 5),
-                    np.round(val_loss, 5)), flush=True)
+                print("\nEpoch: [{}/{}]\tTrain Loss: {}\tTrain Acc: {}\tVal Loss: {}\tVal Acc: {}".format(
+                    self.nn_epoch, self.num_epochs, np.round(train_loss, 5),np.round(train_acc * 100, 2),
+                    np.round(val_loss, 5),np.round(val_acc * 100, 2)), flush=True)
 
                 # save best
                 if val_loss < self.best_val_loss:
