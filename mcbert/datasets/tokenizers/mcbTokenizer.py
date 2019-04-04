@@ -20,6 +20,10 @@ class MCBTokenizer():
     def indexize(self, toks):
         return [self.dict.get_idx(tok) for tok in toks]
 
+    def _attn_mask(self, tok):
+        #this relies
+        return 1 if tok != 0 else 0 
+
     #will probably need to modify this for text generation
     def tokenize(self, sentence, max_len=None):
         toks = self.split(sentence)
@@ -34,9 +38,13 @@ class MCBTokenizer():
 
         input_ids = self.indexize(toks)
         token_type_ids = [length] * len(toks)
+        attention_mask = [self._attn_mask(x) for x in input_ids]
 
-        return input_ids, token_type_ids
+        inp_ids = torch.tensor(input_ids).long()
+        inp_len = torch.tensor(token_type_ids).long()
+        attention_mask = torch.tensor(attention_mask).long()
 
+        return inp_ids, inp_len, attention_mask
 
 
 class MCBDict:
