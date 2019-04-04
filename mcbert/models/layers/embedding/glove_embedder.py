@@ -2,7 +2,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from mcbert.util.mcbtokenizer import MCBDict
+from mcbert.datasets.tokenizers.mcbtokenizer import MCBDict
 
 class GloveEmbedder(torch.nn.Module):
 

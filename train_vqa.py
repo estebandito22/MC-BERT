@@ -5,8 +5,7 @@ import pandas as pd
 
 from mcbert.datasets.vqa import VQADataset
 from mcbert.trainers.vqa import VQATrainer
-from mcbert.util import mcbtokenizer
-from mcbert.util import berttokenizer
+from mcbert.datasets.tokenizers import berttokenizer, mcbtokenizer
 
 if __name__ == '__main__':
     """
