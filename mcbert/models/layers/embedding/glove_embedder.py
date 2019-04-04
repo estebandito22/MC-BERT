@@ -26,7 +26,7 @@ class GloveEmbedder(torch.nn.Module):
         # build mask  (Or, especially if we don't need EOS/SOS, just make OOV random
         self.embeddings_mask = torch.zeros(vocab_size, requires_grad=False).float()
         self.embeddings_mask[0:4] = 1
-        # self.embeddings_mask.resize_(vocab_size, 1)
+        self.embeddings_mask.resize_(vocab_size, 1)
 
         if torch.cuda.is_available():
             self.embeddings_mask = self.embeddings_mask.cuda()
