@@ -199,8 +199,7 @@ class VQATrainer(Trainer):
                 # let's calculate loss and accuracy out here
                 logits = self.model(
                     vis_feats, input_ids, token_type_ids, attention_mask, None)
-
-                probs = torch.nn.functional.softmax(logits, dim=1)
+                probs = torch.nn.functional.log_softmax(logits, dim=1)
                 loss = loss_fct(probs, labels)
 
                 # compute train loss and acc
