@@ -118,7 +118,7 @@ class VQATrainer(Trainer):
         train_loss = 0
         samples_processed = 0
         correct = 0
-        loss_fct = torch.nn.NLLoss()
+        loss_fct = torch.nn.NLLLoss()
 
         for batch_samples in tqdm(loader):
 
@@ -170,7 +170,7 @@ class VQATrainer(Trainer):
         val_loss = 0
         samples_processed = 0
         correct = 0
-        loss_fct = torch.nn.NLLoss()
+        loss_fct = torch.nn.NLLLoss()
 
         with torch.no_grad():
             for batch_samples in tqdm(loader):
@@ -245,7 +245,9 @@ class VQATrainer(Trainer):
         # concat validation datasets
         self.save_dir = save_dir
 
-        # initialize constant loaders
+        #grabbing 10%, could be smarter about this...
+        val_dataset = Subset(val_dataset, val_dataset.get_batches(10)[0])
+        # initialize constant loaders 
         val_loader = DataLoader(
             val_dataset, batch_size=self.batch_size, shuffle=False,
             num_workers=8)
@@ -254,6 +256,7 @@ class VQATrainer(Trainer):
         if not warm_start:
             self._init_nn(len(train_dataset))
         train_loss = 0
+        train_acc = 0
 
         # train loop
         while self.nn_epoch < self.num_epochs + 1:
