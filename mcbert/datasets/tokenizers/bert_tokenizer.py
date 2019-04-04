@@ -1,6 +1,6 @@
 
 from pytorch_pretrained_bert import BertTokenizer as OrigBertTokenizer
-
+import torch
 
 class BertTokenizer():
 
@@ -22,10 +22,10 @@ class BertTokenizer():
 
         input_ids = self.tokenizer.convert_tokens_to_ids(tokenized)
         token_type_ids = [0] * len(tokenized)
-	attention_mask = [self._attn_mask(x) for x in input_ids]
+        attention_mask = [self._attn_mask(x) for x in input_ids]
 
-	inp_ids = torch.tensor(input_ids).long()
-        inp_len = torch.tensor(token_type_ids).long()
+        input_ids = torch.tensor(input_ids).long()
+        token_type_ids = torch.tensor(token_type_ids).long()
         attention_mask = torch.tensor(attention_mask).long()
 
-        return  inp_ids, inp_len, attention_mask 
+        return  input_ids, token_type_ids, attention_mask
