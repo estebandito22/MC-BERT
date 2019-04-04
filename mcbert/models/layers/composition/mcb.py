@@ -4,55 +4,61 @@ import numpy as np
 import torch
 from torch import nn
 
-# vis_feats = torch.randn((16, 64, 768, 7, 7))
-# txt_feats = torch.randn((16, 64, 768, 7, 7))
+# batch x seqlen x feat_dim x spatial size x spatial size
+# vis_feats = torch.randn((1, 2, 4, 2, 2))
+# txt_feats = torch.randn((1, 2, 4, 2, 2))
 #
-# vis_h = torch.randint(0, 768, (768,))
-# vis_h = vis_h.view(1, 1, 768, 1, 1)
-# vis_h = vis_h.repeat(16, 64, 1, 7, 7)
+#
+# 
+# vis_h = torch.randint(0, 8, (4,))
+# vis_h
+# vis_h = vis_h.view(1, 1, 4, 1, 1)
+# vis_h = vis_h.repeat(1, 2, 1, 2, 2)
 # vis_h.size()
 #
-# txt_h = torch.randint(0, 768, (768,))
-# txt_h = txt_h.view(1, 1, 768, 1, 1)
-# txt_h = txt_h.repeat(16, 64, 1, 7, 7)
+#
+# txt_h = torch.randint(0, 8, (4,))
+# txt_h = txt_h.view(1, 1, 4, 1, 1)
+# txt_h = txt_h.repeat(1, 2, 1, 2, 2)
 # txt_h.size()
 #
-# vis_s = torch.from_numpy(np.random.choice([-1,1], (768,))).float()
-# vis_s = vis_s.view(1, 1, 768, 1, 1)
-# vis_s = vis_s.repeat(16, 64, 1, 7, 7)
+# vis_s = torch.from_numpy(np.random.choice([-1,1], (4,))).float()
+# vis_s
+# vis_s = vis_s.view(1, 1, 4, 1, 1)
+# vis_s = vis_s.repeat(1, 2, 1, 2, 2)
 # vis_s.size()
 #
-# txt_s = torch.from_numpy(np.random.choice([-1,1], (768,))).float()
-# txt_s = txt_s.view(1, 1, 768, 1, 1)
-# txt_s = txt_s.repeat(16, 64, 1, 7, 7)
+#
+# txt_s = torch.from_numpy(np.random.choice([-1,1], (4,))).float()
+# txt_s = txt_s.view(1, 1, 4, 1, 1)
+# txt_s = txt_s.repeat(1, 2, 1, 2, 2)
 # txt_s.size()
 #
-# vis_y = torch.zeros(16, 64, 16000, 7, 7)
-# txt_y = torch.zeros(16, 64, 16000, 7, 7)
+# vis_y = torch.zeros(1, 2, 8, 2, 2)
+# txt_y = torch.zeros(1, 2, 8, 2, 2)
 #
+# vis_feats_psi = vis_y.scatter_add_(dim=2, index=vis_h, src=vis_feats * vis_s)
+# txt_feats_psi = txt_y.scatter_add_(dim=2, index=txt_h, src=txt_feats * txt_s)
 #
-#
-# vis_feats_psi = vis_y.scatter_(dim=2, index=vis_h, src=vis_feats * vis_s)
-# txt_feats_psi = txt_y.scatter_(dim=2, index=txt_h, src=txt_feats * txt_s)
 #
 # vis_feats_psi = vis_feats_psi.permute(0, 1, 3, 4, 2).contiguous()
 # txt_feats_psi = vis_feats_psi.permute(0, 1, 3, 4, 2).contiguous()
 #
-# vis_feats_psi = vis_feats_psi.view(-1, 16000)
+# vis_feats_psi = vis_feats_psi.view(-1, 8)
 # vis_feats_dft = torch.rfft(vis_feats_psi, 1, normalized=False)
 # vis_feats_dft.shape
 #
-# txt_feats_psi = txt_feats_psi.view(-1, 16000)
+# txt_feats_psi = txt_feats_psi.view(-1, 8)
 # txt_feats_dft = torch.rfft(txt_feats_psi, 1, normalized=False)
 # txt_feats_dft.shape
 #
 # cmb_feats_dft = vis_feats_dft * txt_feats_dft
 # cmb_feats_dft.shape
 #
-# cmb_feats = torch.irfft(cmb_feats_dft, 1, normalized=False, signal_sizes=(16000,))
+# cmb_feats = torch.irfft(cmb_feats_dft, 1, normalized=False, signal_sizes=(8,))
 # cmb_feats.shape
 #
-# cmb_feats = cmb_feats.view(16, 64, 7, 7, 16000)
+# cmb_feats = cmb_feats.view(1, 2, 2, 2, 8)
 # cmb_feats = cmb_feats.permute(0, 1, 4, 2, 3).contiguous()
 # cmb_feats.shape
 
@@ -75,9 +81,9 @@ class MCB(nn.Module):
         self.feat_dim = feat_dim
         self.cmb_feat_dim = cmb_feat_dim
 
-        self.vis_h = torch.randint(0, self.feat_dim, (self.feat_dim,))
+        self.vis_h = torch.randint(0, self.cmb_feat_dim, (self.feat_dim,))
         self.vis_h = self.vis_h.view(1, 1, self.feat_dim, 1, 1)
-        self.txt_h = torch.randint(0, self.feat_dim, (self.feat_dim,))
+        self.txt_h = torch.randint(0, self.cmb_feat_dim, (self.feat_dim,))
         self.txt_h = self.txt_h.view(1, 1, self.feat_dim, 1, 1)
 
         self.vis_s = torch.from_numpy(
@@ -120,9 +126,9 @@ class MCB(nn.Module):
             vis_y = vis_y.cuda()
             txt_y = txt_y.cuda()
 
-        vis_feats_psi = vis_y.scatter_(
+        vis_feats_psi = vis_y.scatter_add_(
             dim=2, index=vis_h, src=vis_feats * vis_s)
-        txt_feats_psi = txt_y.scatter_(
+        txt_feats_psi = txt_y.scatter_add_(
             dim=2, index=txt_h, src=txt_feats * txt_s)
 
         vis_feats_psi = vis_feats_psi.permute(0, 1, 3, 4, 2).contiguous()
@@ -157,4 +163,3 @@ class MCB(nn.Module):
 
     def signed_sqrt(self, x):
         return torch.mul(torch.sign(x), torch.sqrt(torch.abs(x) + 1e-12))
-
