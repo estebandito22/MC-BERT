@@ -32,6 +32,7 @@ class MCBOriginalModel(nn.Module):
         self.embedder = embedder
 
         self.lstm = nn.LSTM(embedder.get_size(), num_layers=2, hidden_size=lstm_hidden_dim, batch_first=True, bidirectional=bidirectional, dropout=0.3) #weight_filler=dict(type='uniform',min=-0.08,max=0.08)
+        self.drop = nn.Dropout(0.3)
 
         self.attention = AttentionMechanism(
             self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
@@ -66,7 +67,8 @@ class MCBOriginalModel(nn.Module):
         hlayers = hlayers.transpose(0, 1)
 
         hlayers = hlayers[restore]
-        
+        hlayers = self.drop(hlayers)
+
         #print("hlayers:", hlayers.shape)
         lstmhids = []
         for i in range(hlayers.shape[1]):
