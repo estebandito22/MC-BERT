@@ -16,6 +16,7 @@ from mcbert.trainers.base_trainer import Trainer
 from mcbert.models.mcbert import MCBertModel
 from mcbert.models.classifier_head import ClassifierHeadModel
 from mcbert.models.mcboriginal import MCBOriginalModel
+from mcbert.models.layers.embedding.glove_embedder import GloveEmbedder
 
 class VQATrainer(Trainer):
 
@@ -72,12 +73,14 @@ class VQATrainer(Trainer):
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, classification=True)
         elif self.model_type == 'mcb':
-            mcb_model = MCBOriginalModel(self.vocab,
+            embedder = GloveEmbedder(self.vocab, 300)
+            mcb_model = MCBOriginalModel(embedder,
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, bidirectional=False,classification=True)
         elif self.model_type == 'mcb-bi':
-            mcb_model = MCBOriginalModel(self.vocab,
+            embedder = GloveEmbedder(self.vocab, 300)
+            mcb_model = MCBOriginalModel(embedder,
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, bidirectional=True, classification=True)

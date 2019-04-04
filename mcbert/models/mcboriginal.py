@@ -1,19 +1,17 @@
 """MCB_Orig model."""
 
 from torch import nn
-import torch.nn.functional as F
 import torch
 
 from mcbert.models.layers.visual.attention import AttentionMechanism
 from mcbert.models.layers.composition.mcb import MCB
-from mcbert.util.mcbtokenizer import MCBDict
+
 
 class MCBOriginalModel(nn.Module):
 
-    """Class implementing MCBERT Model with visual attention."""
+    """Class implementing MCB Model with visual attention."""
 
-
-    def __init__(self, vocab_file, vis_feat_dim=2208, spatial_size=7, embd_dim=300, hidden_dim = 2048,
+    def __init__(self, embedder, vis_feat_dim=2208, spatial_size=7,  hidden_dim = 2048,
                  cmb_feat_dim=16000, kernel_size=3, bidirectional=False, classification = True ):
 
 
@@ -28,33 +26,12 @@ class MCBOriginalModel(nn.Module):
         #hint to whatever head uses us - 
         self.output_dim = cmb_feat_dim
 
-        #probably want to do this elsewhere and pass in but...
-        dict = MCBDict(metadata=vocab_file)
-        vocab_size = dict.size()
-
-        # override the word embeddings with pre-trained
-        self.glove = nn.Embedding(vocab_size, embd_dim, padding_idx=0)
-        self.glove.weight = nn.Parameter(torch.tensor(dict.get_gloves()).float())
-
-        # build mask  (Or, especially if we don't need EOS/SOS, just make OOV random
-        self.embeddings_mask = torch.zeros(vocab_size, requires_grad=False).float()
-        self.embeddings_mask[0:4] = 1
-        #self.embeddings_mask.resize_(vocab_size, 1)
-
-        if torch.cuda.is_available():
-            self.embeddings_mask = self.embeddings_mask.cuda()
-
-        # mask pretrained embeddings
-        self.glove.weight.register_hook(
-            lambda grad: grad * self.embeddings_mask)
-
         #each layer (or direction) gets its own part
         lstm_hidden_dim = int(hidden_dim / 2 / (2 if bidirectional else 1))
 
-        self.embedding = nn.Embedding(vocab_size, embd_dim, padding_idx=0) #weight_filler=dict(type='uniform',min=-0.08,max=0.08))
-        self.lstm = nn.LSTM(embd_dim*2, num_layers=2, hidden_size=lstm_hidden_dim, batch_first=True, bidirectional=bidirectional, dropout=0.3) #weight_filler=dict(type='uniform',min=-0.08,max=0.08)
-        #self.drop = nn.Dropout(0.3)
-        #self.layer2 = nn.LSTM(lstm_hidden_dim, hidden_size=lstm_hidden_dim, batch_first=True)  # weight_filler=dict(type='uniform',min=-0.08,max=0.08)
+        self.embedder = embedder
+
+        self.lstm = nn.LSTM(embedder.get_size(), num_layers=2, hidden_size=lstm_hidden_dim, batch_first=True, bidirectional=bidirectional, dropout=0.3) #weight_filler=dict(type='uniform',min=-0.08,max=0.08)
 
         self.attention = AttentionMechanism(
             self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
@@ -72,10 +49,7 @@ class MCBOriginalModel(nn.Module):
         #just need one per example
         lengths = token_type_ids[:,[0]].squeeze(-1)
 
-        #combine our two embeddings
-        embds = F.tanh(self.embedding(input_ids))
-        gloves = self.glove(input_ids)
-        inpt = torch.cat((embds, gloves), dim=2)
+        inpt = self.embedder(input_ids)
 
         #get our sort order and sort our inputs
         order = torch.argsort(lengths, descending=True)
