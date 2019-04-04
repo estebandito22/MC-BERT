@@ -80,8 +80,8 @@ if __name__ == '__main__':
         print("unknown model type", args['model_type'])
         exit(1)
 
-    train_dataset = VQADataset(pd.read_csv(args['train_data_path']), tokenizer, args['n_classes'], split='train', max_sent_len=args['max_sent_len'])
-    val_dataset = VQADataset(pd.read_csv(args['val_data_path']), tokenizer, args['n_classes'], split='val', max_sent_len=args['max_sent_len'])
+    train_dataset = VQADataset(pd.read_csv(args['train_data_path']), tokenizer, args['n_classes'], max_sent_len=args['max_sent_len'])
+    val_dataset = VQADataset(pd.read_csv(args['val_data_path']), tokenizer, args['n_classes'], max_sent_len=args['max_sent_len'])
 
     vqa = VQATrainer(model_type=args['model_type'],
                      vis_feat_dim=args['vis_feat_dim'],
