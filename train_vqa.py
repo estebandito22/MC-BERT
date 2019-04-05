@@ -5,7 +5,7 @@ import pandas as pd
 
 from mcbert.datasets.vqa import VQADataset
 from mcbert.trainers.vqa import VQATrainer
-from mcbert.datasets.tokenizers import berttokenizer, mcbtokenizer
+from mcbert.datasets.tokenizers import bert_tokenizer, mcb_tokenizer
 
 if __name__ == '__main__':
     """
@@ -72,16 +72,16 @@ if __name__ == '__main__':
     args = vars(ap.parse_args())
 
     if args['model_type'].startswith('mcb'):
-        dict = mcbtokenizer.MCBDict(args['vocab_path'])
-        tokenizer = mcbtokenizer.MCBTokenizer(dict)
+        dict = mcb_tokenizer.MCBDict(args['vocab_path'])
+        tokenizer = mcb_tokenizer.MCBTokenizer(dict)
     elif args['model_type'] == 'mc-bert':
-        tokenizer = berttokenizer.BertTokenizer()
+        tokenizer = bert_tokenizer.BertTokenizer()
     else:
         print("unknown model type", args['model_type'])
         exit(1)
 
-    train_dataset = VQADataset(pd.read_csv(args['train_data_path']), tokenizer, args['n_classes'], split='train', max_sent_len=args['max_sent_len'])
-    val_dataset = VQADataset(pd.read_csv(args['val_data_path']), tokenizer, args['n_classes'], split='val', max_sent_len=args['max_sent_len'])
+    train_dataset = VQADataset(pd.read_csv(args['train_data_path']), tokenizer, args['n_classes'], max_sent_len=args['max_sent_len'])
+    val_dataset = VQADataset(pd.read_csv(args['val_data_path']), tokenizer, args['n_classes'], max_sent_len=args['max_sent_len'])
 
     vqa = VQATrainer(model_type=args['model_type'],
                      vis_feat_dim=args['vis_feat_dim'],

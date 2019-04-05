@@ -1,7 +1,7 @@
 #class for tokenizing for the MCB Original
 import re
 import numpy as np
-
+import torch
 
 class MCBTokenizer():
 
@@ -40,11 +40,11 @@ class MCBTokenizer():
         token_type_ids = [length] * len(toks)
         attention_mask = [self._attn_mask(x) for x in input_ids]
 
-        inp_ids = torch.tensor(input_ids).long()
-        inp_len = torch.tensor(token_type_ids).long()
+        input_ids = torch.tensor(input_ids).long()
+        input_len = torch.tensor(token_type_ids).long()
         attention_mask = torch.tensor(attention_mask).long()
 
-        return inp_ids, inp_len, attention_mask
+        return input_ids, input_len, attention_mask
 
 
 class MCBDict:
