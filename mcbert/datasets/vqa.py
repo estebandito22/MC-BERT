@@ -40,7 +40,10 @@ class VQADataset(Dataset):
         """Return sample from dataset at index i."""
         #label
         label = min(self.n_classes - 1, self.metadata.iat[i, 2])
-                
+
+        # question_id
+        qid = torch.tensor(self.metadata.iat[i, 3]).long()
+
         #Sentence Features
         sentence = self.metadata.iat[i, 1]
         input_ids, token_type_ids, attention_mask = self.tokenizer.tokenize(sentence, self.max_sent_len)
@@ -54,5 +57,6 @@ class VQADataset(Dataset):
         return {'input_ids': input_ids,
                 'token_type_ids': token_type_ids,
                 'labels': label,
+                'qids' : qid,
                 'attention_mask': attention_mask,
                 'vis_feats': vis_feats}

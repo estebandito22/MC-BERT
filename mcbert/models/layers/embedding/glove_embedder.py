@@ -6,7 +6,7 @@ from mcbert.datasets.tokenizers.mcb_tokenizer import MCBDict
 
 class GloveEmbedder(torch.nn.Module):
 
-    def __init__(self,vocab_file, embd_dim ):
+    def __init__(self, vocab_file, embd_dim ):
         super(GloveEmbedder, self).__init__()
 
         self.embd_dim = embd_dim

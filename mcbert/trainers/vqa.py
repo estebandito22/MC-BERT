@@ -1,6 +1,7 @@
 """Classes to train Deep Source Separation Models."""
 
 import os
+import csv
 
 import numpy as np
 from tqdm import tqdm
@@ -65,7 +66,7 @@ class VQATrainer(Trainer):
 
         self.USE_CUDA = torch.cuda.is_available()
 
-    def _init_nn(self, train_dataset_len=None):
+    def _init_nn(self, train_chunks, train_dataset_len=None):
         """Initialize the nn model for training."""
         if self.model_type == 'mc-bert':
             mcb_model = MCBertModel(
@@ -106,7 +107,7 @@ class VQATrainer(Trainer):
             self.optimizer = BertAdam(
                 optimizer_grouped_parameters, lr=self.learning_rate,
                 warmup=self.warmup_proportion,
-                t_total=int(train_dataset_len / 40
+                t_total=int(train_dataset_len / train_chunks
                             / self.batch_size * self.num_epochs))
         else:
             self.optimizer = Adam(
@@ -167,7 +168,7 @@ class VQATrainer(Trainer):
 
         return train_loss, acc
 
-    def _eval_epoch(self, loader):
+    def _eval_epoch(self, loader, outfile=None):
         """Eval epoch."""
         self.model.eval()
         val_loss = 0
@@ -205,6 +206,12 @@ class VQATrainer(Trainer):
                 # compute train loss and acc
                 predicts = torch.argmax(probs, dim=1)
                 correct += torch.sum(predicts == labels).item()
+                #write out results
+                if outfile is not None:
+                    qids = batch_samples['qids']
+                    for i in range(len(qids)):
+                        outfile.writerow([qids[i].item(), predicts[i].item(), labels[i].item()])
+
 
                 bs = input_ids.size(0)
                 samples_processed += bs
@@ -215,7 +222,7 @@ class VQATrainer(Trainer):
 
         return val_loss, acc
 
-    def fit(self, train_dataset, val_dataset, save_dir, warm_start=False):
+    def fit(self, train_dataset, train_chunks, val_dataset, eval_pct, save_dir, warm_start=False):
         """
         Train the NN model.
 
@@ -236,19 +243,23 @@ class VQATrainer(Trainer):
                Kernel Size: {}\n\
                Dropout: {}\n\
                Learning Rate: {}\n\
+               Batch Size: {}\n\
+               Chunks per epoch: {}\n\
+               Eval Pct: {}\n\
                Warmup Proportion: {}\n\
                N Classes: {}\n\
                Save Dir: {}".format(
                    self.model_type, self.vis_feat_dim, self.spatial_size,
                    self.lm_hidden_dim, self.cmb_feat_dim, self.kernel_size,
-                   self.dropout, self.learning_rate, self.warmup_proportion,
+                   self.dropout, self.learning_rate, self.batch_size,
+                   train_chunks, eval_pct, self.warmup_proportion,
                    self.n_classes, save_dir), flush=True)
 
         # concat validation datasets
         self.save_dir = save_dir
 
         #grabbing 10%, could be smarter about this...
-        val_dataset = Subset(val_dataset, val_dataset.get_batches(10)[0])
+        val_dataset = Subset(val_dataset, val_dataset.get_batches(100)[int(eval_pct)])
         # initialize constant loaders 
         val_loader = DataLoader(
             val_dataset, batch_size=self.batch_size, shuffle=False,
@@ -256,14 +267,14 @@ class VQATrainer(Trainer):
 
         # initialize neural network and training variables
         if not warm_start:
-            self._init_nn(len(train_dataset))
+            self._init_nn(train_chunks, len(train_dataset))
         train_loss = 0
         train_acc = 0
 
         # train loop
         while self.nn_epoch < self.num_epochs + 1:
 
-            train_loaders = self._batch_loaders(train_dataset, k=40)
+            train_loaders = self._batch_loaders(train_dataset, k=train_chunks)
 
             for train_loader in train_loaders:
                 if self.nn_epoch > 0:
@@ -308,6 +319,25 @@ class VQATrainer(Trainer):
         self.model.eval()
         raise NotImplementedError("Not yet implemented!")
 
+    def report_results(self, val_dataset, outfile_name):
+
+        # grabbing 10%, could be smarter about this...
+        #val_dataset = Subset(val_dataset, val_dataset.get_batches(10)[0])
+        # initialize constant loaders
+        val_loader = DataLoader(
+            val_dataset, batch_size=self.batch_size, shuffle=False,
+            num_workers=8)
+
+        f = open(outfile_name, 'w', newline='')
+        writer = csv.writer(f)
+
+        val_loss, val_acc = self._eval_epoch(val_loader, writer)
+        f.close()
+
+        print("\nVal Loss: {}\tVal Acc: {}".format(
+            np.round(val_loss, 5), np.round(val_acc * 100, 2)), flush=True)
+
+
     def _batch_loaders(self, dataset, k=None):
         batches = dataset.get_batches(k)
         loaders = []
@@ -349,7 +379,7 @@ class VQATrainer(Trainer):
                 torch.save({'state_dict': self.model.state_dict(),
                             'trainer_dict': self.__dict__}, file)
 
-    def load(self, model_dir, epoch, train_data_len=None):
+    def load(self, model_dir, epoch, train_chunks=0, train_data_len=None):
         """
         Load a previously trained model.
 
@@ -359,6 +389,10 @@ class VQATrainer(Trainer):
             epoch : epoch of model to load.
 
         """
+
+
+        skip_list = ['vocab']
+
         epoch_file = "epoch_{}".format(epoch) + '.pth'
         model_file = os.path.join(model_dir, epoch_file)
         with open(model_file, 'rb') as model_dict:
@@ -368,9 +402,10 @@ class VQATrainer(Trainer):
                 checkpoint = torch.load(model_dict, map_location='cpu')
 
         for (k, v) in checkpoint['trainer_dict'].items():
-            setattr(self, k, v)
+            if k not in skip_list:
+                setattr(self, k, v)
 
         self.USE_CUDA = torch.cuda.is_available()
-        self._init_nn(train_data_len)
+        self._init_nn(train_chunks, train_data_len)
         self.model.load_state_dict(checkpoint['state_dict'])
         self.nn_epoch += 1

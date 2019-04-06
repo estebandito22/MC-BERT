@@ -54,6 +54,12 @@ if __name__ == '__main__':
                     help="Proportion of training steps for warmup.")
     ap.add_argument("-ne", "--num_epochs", type=int, default=5,
                     help="Number of epochs for optimization.")
+
+    ap.add_argument("-tb", "--train_blocks", type=int, default=40,
+                    help="Number of epochs for optimization.")
+    ap.add_argument("-ep", "--eval_pct", type=int, default=10,
+                    help="Number of epochs for optimization.")
+
     ap.add_argument("-td", "--train_data_path",
                     help="Location of metadata for training.")
     ap.add_argument("-dd", "--val_data_path",
@@ -69,6 +75,11 @@ if __name__ == '__main__':
                     help="Path to model for warm start.")
     ap.add_argument("-ce", "--continue_epoch", type=int,
                     help="Epoch of model for ward start.")
+    #hack to reuse this evaluation
+    ap.add_argument("-rf", "--report_file",
+                    help="signals we want to just report on val")
+
+
     args = vars(ap.parse_args())
 
     if args['model_type'].startswith('mcb'):
@@ -99,9 +110,12 @@ if __name__ == '__main__':
 
     if args['continue_path'] and args['continue_epoch']:
         vqa.load(
-            args['continue_path'], args['continue_epoch'], len(train_dataset))
+            args['continue_path'], args['continue_epoch'], args['train_blocks'], len(train_dataset))
         warm_start = True
     else:
         warm_start = False
 
-    vqa.fit(train_dataset, val_dataset, args['save_dir'], warm_start)
+    if args['report_file']:
+        vqa.report_results(val_dataset, args['report_file'])
+    else:
+        vqa.fit(train_dataset, args['train_blocks'], val_dataset, args['eval_pct'], args['save_dir'], warm_start)
