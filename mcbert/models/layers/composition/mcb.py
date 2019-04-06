@@ -132,7 +132,7 @@ class MCB(nn.Module):
             dim=2, index=txt_h, src=txt_feats * txt_s)
 
         vis_feats_psi = vis_feats_psi.permute(0, 1, 3, 4, 2).contiguous()
-        txt_feats_psi = txt.feats_psi.permute(0, 1, 3, 4, 2).contiguous()
+        txt_feats_psi = txt_feats_psi.permute(0, 1, 3, 4, 2).contiguous()
 
         vis_feats_psi = vis_feats_psi.view(-1, self.cmb_feat_dim)
         vis_feats_dft = torch.rfft(vis_feats_psi, 1, normalized=False)
