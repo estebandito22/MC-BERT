@@ -2,7 +2,7 @@ import csv
 import sys
 from collections import Counter
 
-from util.mcbtokenizer import MCBTokenizer
+from mcbert.datasets.tokenizers.mcb_tokenizer import MCBTokenizer
 
 '''
 This script will take in a list of csv files where the second field is a text string, and build a dictionary.
