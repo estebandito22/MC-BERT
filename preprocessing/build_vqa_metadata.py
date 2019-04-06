@@ -23,7 +23,7 @@ val_meta = 'mscoco_val2014.csv'
 test_dev_meta = 'mscoco_test_dev2015.csv'
 test_meta = 'mscoco_test2015.csv'
 
-answer_labels = "answers.txt"
+answer_labels = "answer_labels.txt"
 
 train_answers= 'mscoco_train2014_answers.csv'
 val_answers = 'mscoco_val2014_answers.csv'
