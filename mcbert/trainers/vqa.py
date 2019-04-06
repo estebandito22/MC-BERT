@@ -210,8 +210,8 @@ class VQATrainer(Trainer):
                 if outfile is not None:
                     qids = batch_samples['qids']
                     for i in range(len(qids)):
-                        outfile.writerow([qids[i].item(), predicts[i].item(), labels[i].item()])
-
+                        outfile[0].writerow([qids[i].item(), predicts[i].item(), labels[i].item()])
+                    outfile[1].flush()
 
                 bs = input_ids.size(0)
                 samples_processed += bs
@@ -331,7 +331,7 @@ class VQATrainer(Trainer):
         f = open(outfile_name, 'w', newline='')
         writer = csv.writer(f)
 
-        val_loss, val_acc = self._eval_epoch(val_loader, writer)
+        val_loss, val_acc = self._eval_epoch(val_loader, (writer, f))
         f.close()
 
         print("\nVal Loss: {}\tVal Acc: {}".format(
