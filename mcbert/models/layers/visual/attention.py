@@ -48,8 +48,8 @@ class AttentionMechanism(nn.Module):
         # vis_feats: batch_size x feat_dim x height x width
         # txt_feats: batch_size x seqlen x hidden_size x height x width
         bs, seqlen, hidden_size = txt_feats.size()
-        txt_feats = txt_feats.unsqueeze(-1).unsqueeze(-1).expand(
-            bs, seqlen, hidden_size, self.spatial_size, self.spatial_size)
+        txt_feats = txt_feats.unsqueeze(-1).unsqueeze(-1).repeat(
+            1, 1, 1, self.spatial_size, self.spatial_size)
 
         bs, seqlen, vis_feat_dim, height, width = vis_feats.size()
         vis_feats = self.project(
@@ -60,6 +60,7 @@ class AttentionMechanism(nn.Module):
         x = self.compose_func(vis_feats, txt_feats)
         x = x.view(bs * seqlen, self.cmb_feat_dim, height, width)
         x = self.conv1(x)
+        x = F.relu(x)
         x = self.conv2(x)
 
         # batch_size x seqlen x 1 x height x width
