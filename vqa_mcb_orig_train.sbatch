@@ -16,10 +16,13 @@ PYTHONPATH=$PYTHONPATH:. python train_vqa.py \
     --lm_hidden_dim 2208 \
     --cmb_feat_dim 16000 \
     --kernel_size 3 \
-    --batch_size 4 \
+    --batch_size 8 \
     --learning_rate 7e-4 \
-    --num_epochs 50 \
+    --num_epochs 1000 \
+    --train_blocks 20 \
+    --eval_pct 5 \
     --n_classes 29332 \
+    --max_sent_len 15 \
     --train_data_path /beegfs/cdr380/VQA/mscoco_train2014_featurized.csv \
     --val_data_path /beegfs/cdr380/VQA/mscoco_val2014_featurized.csv \
     --vocab_path /beegfs/cdr380/VQA/dict.txt \
