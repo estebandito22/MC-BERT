@@ -2,6 +2,7 @@
 
 import os
 import csv
+import random
 
 import numpy as np
 from tqdm import tqdm
@@ -112,6 +113,7 @@ class VQATrainer(Trainer):
         else:
             self.optimizer = Adam(
                 self.model.parameters(), lr=self.learning_rate)
+            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
 
         if self.USE_CUDA:
             self.model = self.model.cuda()
@@ -156,6 +158,13 @@ class VQATrainer(Trainer):
             loss.backward()
             self.optimizer.step()
 
+            if random.random() > 1:
+                print("\nconv1 grad:", torch.norm(self.model.mcb_model.attention.conv1.weight.grad, p=2))
+                print("conv2 grad:", torch.norm(self.model.mcb_model.attention.conv2.weight.grad, p=2))
+                print("lstm0i grad:", torch.norm(self.model.mcb_model.lstm.weight_ih_l0.grad, p=2))
+                print("lstm0h grad:", torch.norm(self.model.mcb_model.lstm.weight_hh_l0.grad, p=2))
+                print("lstm1 grad:", torch.norm(self.model.mcb_model.lstm.weight_ih_l1.grad, p=2))
+                print("cls grad:", torch.norm(self.model.cls.weight.grad, p=2))
             # compute train loss and acc
             predicts = torch.argmax(probs, dim=1)
             correct += torch.sum(predicts == labels).item()
@@ -212,6 +221,11 @@ class VQATrainer(Trainer):
                     for i in range(len(qids)):
                         outfile[0].writerow([qids[i].item(), predicts[i].item(), labels[i].item()])
                     outfile[1].flush()
+
+                if random.random() > 1:
+                    print("")
+                    for i in range(len(predicts)):
+                        print(predicts[i].item(), labels[i].item(), sep=':')
 
                 bs = input_ids.size(0)
                 samples_processed += bs
@@ -294,6 +308,9 @@ class VQATrainer(Trainer):
                     self.best_val_loss = val_loss
                     self.save()
                 self.nn_epoch += 1
+
+                if self.scheduler:
+                    self.scheduler.step(val_loss)
 
     def score(self, loader):
         """
