@@ -81,13 +81,13 @@ class MCB(nn.Module):
         self.feat_dim = feat_dim
         self.cmb_feat_dim = cmb_feat_dim
 
+        np.random.seed(1234)
+        torch.manual_seed(1234)
+
         self.vis_h = torch.randint(0, self.cmb_feat_dim, (self.feat_dim,))
         self.vis_h = self.vis_h.view(1, 1, self.feat_dim, 1, 1)
         self.txt_h = torch.randint(0, self.cmb_feat_dim, (self.feat_dim,))
         self.txt_h = self.txt_h.view(1, 1, self.feat_dim, 1, 1)
-
-        np.random.seed(1234)
-        torch.manual_seed(1234)
 
         self.vis_s = torch.from_numpy(
             np.random.choice([-1, 1], (self.feat_dim,))).float()
