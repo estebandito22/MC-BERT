@@ -273,7 +273,7 @@ class VQATrainer(Trainer):
         self.save_dir = save_dir
 
         #grabbing 10%, could be smarter about this...
-        val_dataset = Subset(val_dataset, val_dataset.get_batches(100)[int(eval_pct)])
+        val_dataset = Subset(val_dataset, val_dataset.get_batches(int(100/eval_pct))[0])
         # initialize constant loaders 
         val_loader = DataLoader(
             val_dataset, batch_size=self.batch_size, shuffle=False,

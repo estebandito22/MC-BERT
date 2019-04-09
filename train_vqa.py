@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     ap.add_argument("-tb", "--train_blocks", type=int, default=40,
                     help="Number of epochs for optimization.")
-    ap.add_argument("-ep", "--eval_pct", type=int, default=10,
+    ap.add_argument("-ep", "--eval_pct", type=float, default=1,
                     help="Number of epochs for optimization.")
 
     ap.add_argument("-td", "--train_data_path",
