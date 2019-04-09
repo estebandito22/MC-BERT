@@ -110,6 +110,7 @@ class VQATrainer(Trainer):
                 warmup=self.warmup_proportion,
                 t_total=int(train_dataset_len / train_chunks
                             / self.batch_size * self.num_epochs))
+            self.scheduler = None
         else:
             self.optimizer = Adam(
                 self.model.parameters(), lr=self.learning_rate)
