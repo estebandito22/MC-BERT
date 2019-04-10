@@ -27,11 +27,11 @@ class ElmoTokenizer():
         inp_len = torch.tensor(inp_ids.size(1))
         
         #pad sentences to max_len
-        inp_ids = torch.cat([inp_ids, torch.zeros(1, max_len-inp_ids.size(1), 50).long()], 1)
+        inp_ids = torch.cat([inp_ids, torch.zeros(1, max_len-inp_ids.size(1), 50).long()], 1).squeeze(0)
         #pad lens to max_len, but keep true size
-        inp_len = inp_len.repeat(inp_ids.size(1))
+        inp_len = inp_len.repeat(inp_ids.size(0))
         
         #Ignore
-        attn_mask = torch.tensor(inp_ids.size(1)).repeat(inp_ids.size(1))
+        attn_mask = torch.tensor(inp_ids.size(0)).repeat(inp_ids.size(0))
 
         return  inp_ids, inp_len, attn_mask
