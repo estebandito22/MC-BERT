@@ -23,9 +23,13 @@ class ElmoTokenizer():
                 ['<eos>']
         
         inp_ids =  batch_to_ids([tokens])
-        inp_ids = torch.cat([inp_ids, torch.zeros(1, max_len-inp_ids.size(1), 50).long()], 1)
+        #True sentence length
+        inp_len = torch.tensor(inp_ids.size(1))
         
-        inp_len = torch.tensor(inp_ids.size(1)).repeat(inp_ids.size(1))
+        #pad sentences to max_len
+        inp_ids = torch.cat([inp_ids, torch.zeros(1, max_len-inp_ids.size(1), 50).long()], 1)
+        #pad lens to max_len, but keep true size
+        inp_len = inp_len.repeat(inp_ids.size(1))
         
         #Ignore
         attn_mask = torch.tensor(inp_ids.size(1)).repeat(inp_ids.size(1))
