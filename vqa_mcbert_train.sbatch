@@ -21,7 +21,7 @@ PYTHONPATH=$PYTHONPATH:. python train_vqa.py \
     --eval_pct 5 \
     --learning_rate 3e-5 \
     --num_epochs 1000 \
-    --n_classes 29332 \
+    --n_classes 3001 \
     --train_blocks 20 \
     --eval_pct 3 \
     --train_data_path /beegfs/cdr380/VQA/mscoco_train2014_featurized.csv \
