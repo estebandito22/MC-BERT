@@ -10,11 +10,10 @@ from torch.nn import functional as F
 from allennlp.modules.elmo import Elmo
 
 #CURRENTLY HARD-CODED
-options_file = "/beegfs/ijh216/elmo/options.json"
-weights_file = "/beegfs/ijh216/elmo/weights.hdf5"
 
 class ElmoEmbedder(torch.nn.Module):
-    def __init__(self, files, emb_dim):
+    def __init__(self, options_file = "/beegfs/ijh216/elmo/options.json", weights_file = "/beegfs/ijh216/elmo/weights.hdf5"):
+
         super(ElmoEmbedder, self).__init__()
         
         self.elmo = Elmo(options_file, weights_file, 1, requires_grad=True) 
@@ -27,3 +26,6 @@ class ElmoEmbedder(torch.nn.Module):
         embds = self.elmo(input_ids)['elmo_representations'][0]
         
         return embds
+
+    def get_size(self):
+        return 1024
