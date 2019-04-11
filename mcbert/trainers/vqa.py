@@ -2,6 +2,7 @@
 
 import os
 import csv
+import random
 
 import numpy as np
 from tqdm import tqdm
@@ -18,6 +19,8 @@ from mcbert.models.mcbert import MCBertModel
 from mcbert.models.classifier_head import ClassifierHeadModel
 from mcbert.models.mcboriginal import MCBOriginalModel
 from mcbert.models.layers.embedding.glove_embedder import GloveEmbedder
+from mcbert.models.layers.embedding.elmo_embedder import ElmoEmbedder
+
 
 class VQATrainer(Trainer):
 
@@ -85,6 +88,12 @@ class VQATrainer(Trainer):
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, bidirectional=True, classification=True)
+        elif self.model_type == 'mc-elmo':
+            embedder = ElmoEmbedder()
+            mcb_model = MCBOriginalModel(embedder,
+                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
+                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
+                 kernel_size=self.kernel_size, bidirectional=True, classification=True)
         else:
             raise ValueError("Did not recognize model type!")
 
@@ -109,9 +118,11 @@ class VQATrainer(Trainer):
                 warmup=self.warmup_proportion,
                 t_total=int(train_dataset_len / train_chunks
                             / self.batch_size * self.num_epochs))
+            self.scheduler = None
         else:
             self.optimizer = Adam(
                 self.model.parameters(), lr=self.learning_rate)
+            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
 
         if self.USE_CUDA:
             self.model = self.model.cuda()
@@ -156,6 +167,13 @@ class VQATrainer(Trainer):
             loss.backward()
             self.optimizer.step()
 
+            if random.random() > 1:
+                print("\nconv1 grad:", torch.norm(self.model.mcb_model.attention.conv1.weight.grad, p=2))
+                print("conv2 grad:", torch.norm(self.model.mcb_model.attention.conv2.weight.grad, p=2))
+                print("lstm0i grad:", torch.norm(self.model.mcb_model.lstm.weight_ih_l0.grad, p=2))
+                print("lstm0h grad:", torch.norm(self.model.mcb_model.lstm.weight_hh_l0.grad, p=2))
+                print("lstm1 grad:", torch.norm(self.model.mcb_model.lstm.weight_ih_l1.grad, p=2))
+                print("cls grad:", torch.norm(self.model.cls.weight.grad, p=2))
             # compute train loss and acc
             predicts = torch.argmax(probs, dim=1)
             correct += torch.sum(predicts == labels).item()
@@ -213,6 +231,11 @@ class VQATrainer(Trainer):
                         outfile[0].writerow([qids[i].item(), predicts[i].item(), labels[i].item()])
                     outfile[1].flush()
 
+                if random.random() > 1:
+                    print("")
+                    for i in range(len(predicts)):
+                        print(predicts[i].item(), labels[i].item(), sep=':')
+
                 bs = input_ids.size(0)
                 samples_processed += bs
                 val_loss += loss.item() * bs
@@ -259,7 +282,7 @@ class VQATrainer(Trainer):
         self.save_dir = save_dir
 
         #grabbing 10%, could be smarter about this...
-        val_dataset = Subset(val_dataset, val_dataset.get_batches(100)[int(eval_pct)])
+        val_dataset = Subset(val_dataset, val_dataset.get_batches(int(100/eval_pct))[0])
         # initialize constant loaders 
         val_loader = DataLoader(
             val_dataset, batch_size=self.batch_size, shuffle=False,
@@ -294,6 +317,9 @@ class VQATrainer(Trainer):
                     self.best_val_loss = val_loss
                     self.save()
                 self.nn_epoch += 1
+
+                if self.scheduler:
+                    self.scheduler.step(val_loss)
 
     def score(self, loader):
         """

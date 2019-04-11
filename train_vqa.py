@@ -5,7 +5,7 @@ import pandas as pd
 
 from mcbert.datasets.vqa import VQADataset
 from mcbert.trainers.vqa import VQATrainer
-from mcbert.datasets.tokenizers import bert_tokenizer, mcb_tokenizer
+from mcbert.datasets.tokenizers import bert_tokenizer, mcb_tokenizer, elmo_tokenizer
 
 if __name__ == '__main__':
     """
@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     ap.add_argument("-tb", "--train_blocks", type=int, default=40,
                     help="Number of epochs for optimization.")
-    ap.add_argument("-ep", "--eval_pct", type=int, default=10,
+    ap.add_argument("-ep", "--eval_pct", type=float, default=1,
                     help="Number of epochs for optimization.")
 
     ap.add_argument("-td", "--train_data_path",
@@ -87,6 +87,9 @@ if __name__ == '__main__':
         tokenizer = mcb_tokenizer.MCBTokenizer(dict)
     elif args['model_type'] == 'mc-bert':
         tokenizer = bert_tokenizer.BertTokenizer()
+    elif args['model_type'] == 'mc-elmo':
+        tokenizer = elmo_tokenizer.ElmoTokenizer()
+
     else:
         print("unknown model type", args['model_type'])
         exit(1)
