@@ -11,7 +11,7 @@ class MCBOriginalModel(nn.Module):
 
     """Class implementing MCB Model with visual attention."""
 
-    def __init__(self, embedder, vis_feat_dim=2208, spatial_size=7,  hidden_dim = 2048,
+    def __init__(self, embedder, vis_feat_dim=2208, spatial_size=7,  hidden_dim = 2208,
                  cmb_feat_dim=16000, kernel_size=3, bidirectional=False, classification = True ):
 
 
@@ -38,7 +38,7 @@ class MCBOriginalModel(nn.Module):
             self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
             self.kernel_size, self.hidden_dim)
 
-        self.compose = MCB(self.hidden_dim, self. cmb_feat_dim)
+        self.compose = MCB(self.vis_feat_dim, self.hidden_dim, self. cmb_feat_dim)
 
         # signed sqrt
 

@@ -32,16 +32,13 @@ class AttentionMechanism(nn.Module):
         self.hidden_size = hidden_size
         assert self.kernel_size % 2 == 1, "kernel_size must be odd."
 
-        self.project = nn.Conv2d(
-            in_channels=self.feat_dim, out_channels=self.hidden_size,
-            kernel_size=1)
         self.conv1 = nn.Conv2d(
             in_channels=self.cmb_feat_dim, out_channels=512,
             kernel_size=self.kernel_size, padding=self.kernel_size // 2)
         self.conv2 = nn.Conv2d(
             in_channels=512, out_channels=1,
             kernel_size=self.kernel_size, padding=self.kernel_size // 2)
-        self.compose_func = MCB(self.hidden_size, self.cmb_feat_dim)
+        self.compose_func = MCB(self.feat_dim, self.hidden_size, self.cmb_feat_dim)
 
     def forward(self, vis_feats, txt_feats):
         """Forward Pass."""
@@ -52,9 +49,6 @@ class AttentionMechanism(nn.Module):
             1, 1, 1, self.spatial_size, self.spatial_size)
 
         bs, seqlen, vis_feat_dim, height, width = vis_feats.size()
-        vis_feats = self.project(
-            vis_feats.view(bs * seqlen, vis_feat_dim, height, width)).view(
-                bs, seqlen, hidden_size, height, width)
 
         # outputs batch_size x seqlen x cmb_feat_dim x height x width
         x = self.compose_func(vis_feats, txt_feats)
