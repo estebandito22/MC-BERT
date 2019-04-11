@@ -88,8 +88,8 @@ class VQATrainer(Trainer):
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, bidirectional=True, classification=True)
-        elif self.model_type == 'mcb-bi':
-            embedder = ElmoEmbedder(None, None)
+        elif self.model_type == 'mc-elmo':
+            embedder = ElmoEmbedder()
             mcb_model = MCBOriginalModel(embedder,
                  vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                  hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
