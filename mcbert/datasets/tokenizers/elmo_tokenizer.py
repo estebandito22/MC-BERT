@@ -16,7 +16,7 @@ class ElmoTokenizer():
         return
 
     def tokenize(self, sentence, max_len):
-        
+	      
         #Will only work with one sentence
         tokens = ['<bos>'] + \
             [tok.text for i, tok in enumerate(self.tokenizer.batch_tokenize([sentence])[0]) if i < max_len - 2] + \
