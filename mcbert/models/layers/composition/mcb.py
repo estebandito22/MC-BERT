@@ -9,7 +9,7 @@ from torch import nn
 # txt_feats = torch.randn((1, 2, 4, 2, 2))
 #
 #
-# 
+#
 # vis_h = torch.randint(0, 8, (4,))
 # vis_h
 # vis_h = vis_h.view(1, 1, 4, 1, 1)
@@ -67,7 +67,7 @@ class MCB(nn.Module):
 
     """Class to concatenate and project word embeddings."""
 
-    def __init__(self, feat_dim, cmb_feat_dim):
+    def __init__(self, vis_feat_dim, txt_feat_dim, cmb_feat_dim):
         """
         Initialize ConcatProject.
 
@@ -78,23 +78,24 @@ class MCB(nn.Module):
 
         """
         super(MCB, self).__init__()
-        self.feat_dim = feat_dim
+        self.vis_feat_dim = vis_feat_dim
+        self.txt_feat_dim = txt_feat_dim
         self.cmb_feat_dim = cmb_feat_dim
 
-        self.vis_h = torch.randint(0, self.cmb_feat_dim, (self.feat_dim,))
-        self.vis_h = self.vis_h.view(1, 1, self.feat_dim, 1, 1)
-        self.txt_h = torch.randint(0, self.cmb_feat_dim, (self.feat_dim,))
-        self.txt_h = self.txt_h.view(1, 1, self.feat_dim, 1, 1)
+        self.vis_h = torch.randint(0, self.cmb_feat_dim, (self.vis_feat_dim,))
+        self.vis_h = self.vis_h.view(1, 1, self.vis_feat_dim, 1, 1)
+        self.txt_h = torch.randint(0, self.cmb_feat_dim, (self.txt_feat_dim,))
+        self.txt_h = self.txt_h.view(1, 1, self.txt_feat_dim, 1, 1)
 
         np.random.seed(1234)
         torch.manual_seed(1234)
 
         self.vis_s = torch.from_numpy(
-            np.random.choice([-1, 1], (self.feat_dim,))).float()
-        self.vis_s = self.vis_s.view(1, 1, self.feat_dim, 1, 1)
+            np.random.choice([-1, 1], (self.vis_feat_dim,))).float()
+        self.vis_s = self.vis_s.view(1, 1, self.vis_feat_dim, 1, 1)
         self.txt_s = torch.from_numpy(
-            np.random.choice([-1, 1], (self.feat_dim,))).float()
-        self.txt_s = self.txt_s.view(1, 1, self.feat_dim, 1, 1)
+            np.random.choice([-1, 1], (self.txt_feat_dim,))).float()
+        self.txt_s = self.txt_s.view(1, 1, self.txt_feat_dim, 1, 1)
 
         if torch.cuda.is_available():
             self.vis_h = self.vis_h.cuda()

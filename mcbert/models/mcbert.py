@@ -35,7 +35,7 @@ class MCBertModel(nn.Module):
             self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
             self.kernel_size, self.hidden_dim)
 
-        self.compose = MCB(self.hidden_dim, self.hidden_dim)
+        self.compose = MCB(self.vis_feat_dim, self.hidden_dim, self.hidden_dim)
 
         self.output_dim = self.hidden_dim
 
