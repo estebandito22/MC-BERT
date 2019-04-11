@@ -16,12 +16,37 @@ test_questions_json = '/beegfs/ijh216/vqa2/Questions/v2_OpenEnded_mscoco_test201
 
 base_image_dir = '/beegfs/ijh216/vqa2/Images/real/mscoco'
 
-base_feature_dir = '/beegfs/cdr380/VQA'
+big_448= True
+already_featurized=True
 
-train_meta = 'mscoco_train2014.csv'
-val_meta = 'mscoco_val2014.csv'
-test_dev_meta = 'mscoco_test_dev2015.csv'
-test_meta = 'mscoco_test2015.csv'
+
+train_meta = 'mscoco_train2014'
+val_meta = 'mscoco_val2014'
+test_dev_meta = 'mscoco_test_dev2015'
+test_meta = 'mscoco_test2015'
+
+
+
+if already_featurized:
+    base_feature_dir = '/beegfs/cdr380/VQA'
+
+    train_meta = train_meta  + '_featurized'
+    val_meta = val_meta  + '_featurized'
+    test_dev_meta = test_dev_meta  + '_featurized'
+    test_meta = test_meta  + '_featurized'
+
+if big_448:
+    train_meta = train_meta + '_448'
+    val_meta = val_meta + '_448'
+    test_dev_meta = test_dev_meta + '_448'
+    test_meta = test_meta + '_448'
+
+train_meta = train_meta + '.csv'
+val_meta = val_meta + '.csv'
+test_dev_meta = test_dev_meta + '.csv'
+test_meta = test_meta + '.csv'
+
+
 
 answer_labels = "answer_labels.txt"
 
@@ -95,6 +120,8 @@ def build_feature(prefix, image_id):
     if base_feature_dir is None:
         return ""
     else:
+        if big_448:
+            prefix = prefix + "_448"
         return os.path.join(base_feature_dir, prefix, "COCO_" + prefix + "_" + str(image_id).zfill(12) + ".pth")
 
 
