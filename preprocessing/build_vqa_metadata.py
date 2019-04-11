@@ -121,8 +121,10 @@ def build_feature(prefix, image_id):
         return ""
     else:
         if big_448:
-            prefix = prefix + "_448"
-        return os.path.join(base_feature_dir, prefix, "COCO_" + prefix + "_" + str(image_id).zfill(12) + ".pth")
+            dir_prefix = prefix + "_448"
+        else:
+            dir_prefix = prefix
+        return os.path.join(base_feature_dir, dir_prefix, "COCO_" + prefix + "_" + str(image_id).zfill(12) + ".pth")
 
 
 def write_metadata(input_file, output_file, prefix, lookup):
