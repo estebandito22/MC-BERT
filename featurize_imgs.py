@@ -18,6 +18,8 @@ if __name__ == '__main__':
         --save_dir /path/to/save/dir
     """
     ap = ArgumentParser()
+    ap.add_argument("-mt", "--model_type", default='resnet',
+                    help="Model type, 'resnet' or 'densenet'.")
     ap.add_argument("-bs", "--batch_size", type=int, default=64,
                     help="Batch size for image featurizer.")
     ap.add_argument("-mp", "--metadata_path",
@@ -31,9 +33,10 @@ if __name__ == '__main__':
     metadata = pd.read_csv(args['metadata_path'], header=None)
     imf_dataset = ImgFeaturizerDataset(metadata, img_size=args['image_size'])
 
-    imf = ImgFeaturizer(args['batch_size'], args['save_dir'])
+    imf = ImgFeaturizer(
+        args['model_type'], args['batch_size'], args['save_dir'])
     new_metadata = imf.transform(imf_dataset)
 
     new_metadata.to_csv(
-        args['metadata_path'].replace('.csv', '_featurized.csv'),
+        args['metadata_path'].replace('.csv', '_featurized_{}.csv'.format(args['model_type'])),
         header=None, index=False)

@@ -3,7 +3,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=96000
-#SBATCH -t2:00:00
+#SBATCH -t6:00:00
 #SBATCH --output=slurm_featurize_pinterest_%j.out
 
 ## Make sure we have access to HPC-managed libraries.
@@ -13,6 +13,7 @@ export LD_PRELOAD=$MKL_LIB/libmkl_rt.so
 
 # Run.
 PYTHONPATH=$PYTHONPATH:. python featurize_imgs.py \
+    --model_type resnet \
     --batch_size 32 \
-    --metadata_path /beegfs/swc419/pinterest40/allimgs-decoded.csv \
-    --save_dir /beegfs/swc419/pinterest40features
+    --metadata_path /beegfs/cdr380/VQA/no-features-metadata/mscoco_train2014.csv \
+    --save_dir /beegfs/cdr380/VQA/train2014_resnet/

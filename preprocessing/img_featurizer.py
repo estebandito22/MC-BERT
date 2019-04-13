@@ -4,6 +4,7 @@ import os
 from tqdm import tqdm
 
 import torch
+from torch import nn
 from torch.utils.data import DataLoader
 
 import torchvision.models as models
@@ -13,7 +14,7 @@ class ImgFeaturizer(object):
 
     """Image Featurizer."""
 
-    def __init__(self, batch_size, save_dir):
+    def __init__(self, model_type, batch_size, save_dir):
         """
         Initialize ImgFeatureizer.
 
@@ -23,15 +24,26 @@ class ImgFeaturizer(object):
             save_dir : string, path to directory for saving img features.
 
         """
+        self.model_type = model_type
         self.batch_size = batch_size
         self.save_dir = save_dir
-        model = models.densenet161(pretrained=True)
-        self.features = model.features
+        if model_type == 'resnet':
+            m = models.resnet152(pretrained=True)
+            self.features = nn.Sequential(
+                *[mod for n, mod in m._modules.items()
+                  if n not in ['avgpool', 'fc']])
+        elif model_type == 'densenet':
+            m = models.densenet161(pretrained=True)
+            self.features = m.features
+        else:
+            raise ValueError("model type must be 'resnet' or 'densenet'.")
 
         self.USE_CUDA = torch.cuda.is_available()
 
         if self.USE_CUDA:
             self.features = self.features.cuda()
+
+        self.features.eval()
 
     def transform(self, dataset):
         """
