@@ -15,5 +15,6 @@ export LD_PRELOAD=$MKL_LIB/libmkl_rt.so
 PYTHONPATH=$PYTHONPATH:. python featurize_imgs.py \
     --model_type resnet \
     --batch_size 32 \
-    --metadata_path /beegfs/cdr380/VQA/no-features-metadata/mscoco_train2014.csv \
-    --save_dir /beegfs/cdr380/VQA/train2014_resnet/
+    --image_size  448 \
+    --metadata_path /beegfs/cdr380/VQA/mscoco_train2014.csv \
+    --save_dir /beegfs/cdr380/VQA/res152_448/train2014/
