@@ -27,16 +27,16 @@ test_meta = 'mscoco_test2015'
 
 
 if already_featurized:
+    feature_set="resnet"
     base_feature_dir = '/beegfs/cdr380/VQA'
 
-    train_meta = train_meta  + '_featurized'
-    val_meta = val_meta  + '_featurized'
-    test_dev_meta = test_dev_meta  + '_featurized'
-    test_meta = test_meta  + '_featurized'
+    train_meta = train_meta  + '_featurized_' + feature_set
+    val_meta = val_meta  + '_featurized_' + feature_set
+    test_dev_meta = test_dev_meta  + '_featurized_' + feature_set
+    test_meta = test_meta  + '_featurized_' + feature_set
     
     #these only matter if we're featurized
     big_448=False 
-    feature_set=""
 
 else:
     base_feature_dir = None
@@ -123,14 +123,11 @@ def build_image(prefix, image_id):
 
 #if we already have the features built, append them too
 def build_feature(prefix, image_id):
-    if base_feature_dir is None:
-        return ""
+    if big_448:
+        dir_prefix = feature_set + "_448"
     else:
-        if big_448:
-            dir_prefix = feature_set + "_448"
-        else:
-            dir_prefix = feature_set
-        return os.path.join(base_feature_dir, dir_prefix, "COCO_" + prefix + "_" + str(image_id).zfill(12) + ".pth")
+        dir_prefix = feature_set
+    return os.path.join(base_feature_dir, dir_prefix, "COCO_" + prefix + "_" + str(image_id).zfill(12) + ".pth")
 
 
 def write_metadata(input_file, output_file, prefix, lookup):
@@ -141,10 +138,10 @@ def write_metadata(input_file, output_file, prefix, lookup):
     with open(output_file, 'w', newline='') as f:
         writer = csv.writer(f)
 
-
         for question in questions:
             row = [build_image(prefix, question['image_id']), question['question'],
-                   lookup[question['question_id']] if lookup else '', question['question_id'], build_feature(prefix, question['image_id']) ]
+                   lookup[question['question_id']] if lookup else '', question['question_id']]
+            if base_feature_dir: row.append(build_feature(prefix, question['image_id']))
             writer.writerow(row)
 
 
