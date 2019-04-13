@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
 
     print("Featurizing images from ", args['metadata_path'], "to", args['save_dir'])
-    print("using", args['model_type'], "with size", args['image_size'], "in batches of ", args['batch_size'])
+    print("using", args['model_type'], "with size", args['image_size'], "in batches of ", args['batch_size'], flush=True)
 
 
     metadata = pd.read_csv(args['metadata_path'], header=None)
