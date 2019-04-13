@@ -27,7 +27,7 @@ if __name__ == '__main__':
     ap.add_argument("-sd", "--save_dir",
                     help="Path to directory to save img features to.")
     ap.add_argument("-mx", "--image_size", type=int, default=None,
-                    help="Path to directory to save img features to.")
+                    help="resize all images to SIZE x SIZE")
     args = vars(ap.parse_args())
 
     metadata = pd.read_csv(args['metadata_path'], header=None)
