@@ -16,8 +16,7 @@ test_questions_json = '/beegfs/ijh216/vqa2/Questions/v2_OpenEnded_mscoco_test201
 
 base_image_dir = '/beegfs/ijh216/vqa2/Images/real/mscoco'
 
-big_448= True
-already_featurized=True
+already_featurized=False
 
 
 train_meta = 'mscoco_train2014'
@@ -34,12 +33,19 @@ if already_featurized:
     val_meta = val_meta  + '_featurized'
     test_dev_meta = test_dev_meta  + '_featurized'
     test_meta = test_meta  + '_featurized'
+    
+    #these only matter if we're featurized
+    big_448=False 
+    feature_set=""
+
+else:
+    base_feature_dir = None
 
 if big_448:
-    train_meta = train_meta + '_448'
-    val_meta = val_meta + '_448'
-    test_dev_meta = test_dev_meta + '_448'
-    test_meta = test_meta + '_448'
+    train_meta = train_meta
+    val_meta = val_meta
+    test_dev_meta = test_dev_meta
+    test_meta = test_meta
 
 train_meta = train_meta + '.csv'
 val_meta = val_meta + '.csv'
@@ -121,9 +127,9 @@ def build_feature(prefix, image_id):
         return ""
     else:
         if big_448:
-            dir_prefix = prefix + "_448"
+            dir_prefix = feature_set + "_448"
         else:
-            dir_prefix = prefix
+            dir_prefix = feature_set
         return os.path.join(base_feature_dir, dir_prefix, "COCO_" + prefix + "_" + str(image_id).zfill(12) + ".pth")
 
 
