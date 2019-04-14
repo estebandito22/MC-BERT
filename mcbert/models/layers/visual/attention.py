@@ -65,4 +65,4 @@ class AttentionMechanism(nn.Module):
         attn_vect = vis_feats * attn_weights
 
         # batch_size x seqlen x hidden_size
-        return attn_vect.view(bs, seqlen, hidden_size, -1).sum(dim=-1)
+        return attn_vect.view(bs, seqlen, vis_feat_dim, -1).sum(dim=-1)
