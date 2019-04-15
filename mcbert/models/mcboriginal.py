@@ -31,20 +31,24 @@ class MCBOriginalModel(nn.Module):
 
         self.embedder = embedder
 
-        self.lstm = nn.LSTM(embedder.get_size(), num_layers=2, hidden_size=lstm_hidden_dim, batch_first=True, bidirectional=bidirectional, dropout=0.3) #weight_filler=dict(type='uniform',min=-0.08,max=0.08)
+        # TODO: initialize weights weight_filler=dict(type='uniform',min=-0.08,max=0.08)
+        self.lstm = nn.LSTM(embedder.get_size(), num_layers=2, hidden_size=lstm_hidden_dim, batch_first=True, bidirectional=bidirectional, dropout=0.3)
         self.drop = nn.Dropout(0.3)
 
         self.attention = AttentionMechanism(
             self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
             self.kernel_size, self.hidden_dim)
 
-        self.compose = MCB(self.vis_feat_dim, self.hidden_dim, self. cmb_feat_dim)
+        self.compose = MCB(self.vis_feat_dim, self.hidden_dim, self.cmb_feat_dim)
 
         # signed sqrt
 
     def forward(self, vis_feats, input_ids, token_type_ids=None,
                 attention_mask=None):
         """Forward Pass."""
+
+        #remeber our batchsize
+        bs = input_ids.shape[0]
 
         #bit of a hack, but we pass the length through in the token_type_ids
         #just need one per example
@@ -65,26 +69,13 @@ class MCBOriginalModel(nn.Module):
         # pooled_output: [batch_size, bert_hidden_dim]
 
         hlayers = hlayers.transpose(0, 1)
-
         hlayers = hlayers[restore]
         hlayers = self.drop(hlayers)
 
-        #print("hlayers:", hlayers.shape)
-        lstmhids = []
-        for i in range(hlayers.shape[1]):
-            lstmhids.append(hlayers[:,i,:].unsqueeze(1))
-        orig_pooled_output = torch.cat(lstmhids, dim=2)
-
-        #print("l1out:", l1out.shape, "l1hid:", hlayers1.shape)
-        #sequence_output = torch.cat((l1out, l2out), dim=2)
+        orig_pooled_output = hlayers.view(bs, -1).unsqueeze(1)
 
         #some tasks require the visual features to be tiled, but we just need a single copy here
         vis_feats = vis_feats[:, 0, :, :].unsqueeze(1)
-
-
-        #print("before attn: sequence_output:", sequence_output.shape)
-        #print("before attn: vis_feats:", vis_feats.shape)
-        #print("before attn: orig_pooled_output", orig_pooled_output.shape)
 
         # batch_size x sequence_length x hidden_dim
         sequence_vis_feats = self.attention(vis_feats, orig_pooled_output)
