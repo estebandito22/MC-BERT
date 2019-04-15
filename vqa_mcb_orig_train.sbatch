@@ -12,7 +12,7 @@
 PYTHONPATH=$PYTHONPATH:. python train_vqa.py \
     --model_type mcb \
     --vis_feat_dim 2208 \
-    --spatial_size 7 \
+    --spatial_size 14 \
     --lm_hidden_dim 2208 \
     --cmb_feat_dim 16000 \
     --kernel_size 3 \
@@ -23,7 +23,7 @@ PYTHONPATH=$PYTHONPATH:. python train_vqa.py \
     --eval_pct 3 \
     --n_classes 3001 \
     --max_sent_len 15 \
-    --train_data_path /beegfs/cdr380/VQA/mscoco_train2014_featurized.csv \
-    --val_data_path /beegfs/cdr380/VQA/mscoco_val2014_featurized.csv \
+    --train_data_path /beegfs/cdr380/VQA/mscoco_train2014_featurized_resnet.csv \
+    --val_data_path /beegfs/cdr380/VQA/mscoco_val2014_featurized_resnet.csv \
     --vocab_path /beegfs/cdr380/VQA/dict.txt \
     --save_dir saved_models/vqa_mcb_orig

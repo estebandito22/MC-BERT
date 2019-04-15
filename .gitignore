@@ -1,7 +1,10 @@
 #Some projects stuff
 pytorch_pretrained_bert
+allennlp
 slurm*.out
 saved_models
+old_*
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -12,9 +12,40 @@
 
 export LD_PRELOAD=$MKL_LIB/libmkl_rt.so
 
+BS=4
+SIZE="448"
+MODEL="densenet"
+
 # Run.
 PYTHONPATH=$PYTHONPATH:. python featurize_imgs.py \
-    --batch_size 8 \
-    --image_size  448 \
-    --metadata_path  /scratch/cdr380/VQA/mscoco_test_dev2015.csv \
-    --save_dir /beegfs/cdr380/VQA/test2015_448/
+    --batch_size $BS \
+    --image_size $SIZE \
+    --model_type $MODEL \
+    --metadata_path  /beegfs/cdr380/VQA/mscoco_test_dev2015.csv \
+    --save_dir /beegfs/cdr380/VQA/${MODEL}_$SIZE/test2015/
+
+
+PYTHONPATH=$PYTHONPATH:. python featurize_imgs.py \
+    --batch_size $BS \
+    --image_size $SIZE \
+    --model_type $MODEL \
+    --metadata_path  /beegfs/cdr380/VQA/mscoco_test2015.csv \
+    --save_dir /beegfs/cdr380/VQA/${MODEL}_$SIZE/test2015/
+
+
+PYTHONPATH=$PYTHONPATH:. python featurize_imgs.py \
+    --batch_size $BS \
+    --image_size $SIZE \
+    --model_type $MODEL \
+    --metadata_path  /beegfs/cdr380/VQA/mscoco_train2014.csv \
+    --save_dir /beegfs/cdr380/VQA/${MODEL}_$SIZE/train2014/
+
+
+PYTHONPATH=$PYTHONPATH:. python featurize_imgs.py \
+    --batch_size $BS \
+    --image_size $SIZE \
+    --model_type $MODEL \
+    --metadata_path  /beegfs/cdr380/VQA/mscoco_val2014.csv \
+    --save_dir /beegfs/cdr380/VQA/${MODEL}_$SIZE/val2014/
+
+

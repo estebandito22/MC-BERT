@@ -56,7 +56,7 @@ class MCBertModel(nn.Module):
 
             # batch_size x 1 x cmb_feat_dim
             cls_cmb_feats = self.compose(
-                cls_sequence_output, cls_vis_feats)
+                cls_vis_feats, cls_sequence_output)
 
             # batch_size x seqlen x hidden_dim
             sequence_cmb_feats = torch.cat(
@@ -68,7 +68,7 @@ class MCBertModel(nn.Module):
 
             # batch_size x seqlen x hidden_dim
             sequence_cmb_feats = self.compose(
-                bert_sequence_output, sequence_vis_feats)
+                sequence_vis_feats, bert_sequence_output )
 
         # see  https://github.com/huggingface/pytorch-pretrained-BERT/blob/
         # 7cc35c31040d8bdfcadc274c087d6a73c2036210/pytorch_pretrained_bert/

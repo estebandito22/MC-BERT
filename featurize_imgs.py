@@ -2,6 +2,7 @@
 
 from argparse import ArgumentParser
 import pandas as pd
+import os
 
 from preprocessing.img_featurizer import ImgFeaturizer
 from preprocessing.datasets.img_featurizer import ImgFeaturizerDataset
@@ -27,11 +28,18 @@ if __name__ == '__main__':
     ap.add_argument("-sd", "--save_dir",
                     help="Path to directory to save img features to.")
     ap.add_argument("-mx", "--image_size", type=int, default=None,
-                    help="Path to directory to save img features to.")
+                    help="resize all images to SIZE x SIZE")
     args = vars(ap.parse_args())
+
+
+    print("Featurizing images from ", args['metadata_path'], "to", args['save_dir'])
+    print("using", args['model_type'], "with size", args['image_size'], "in batches of ", args['batch_size'], flush=True)
+
 
     metadata = pd.read_csv(args['metadata_path'], header=None)
     imf_dataset = ImgFeaturizerDataset(metadata, img_size=args['image_size'])
+
+    os.makedirs(args['save_dir'], exist_ok=True)
 
     imf = ImgFeaturizer(
         args['model_type'], args['batch_size'], args['save_dir'])
