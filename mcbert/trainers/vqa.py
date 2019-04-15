@@ -144,7 +144,7 @@ class VQATrainer(Trainer):
             attention_mask = batch_samples['attention_mask']
             # batch_size
             labels = batch_samples['labels']
-            # batch_size x seqlen x height x width
+            # batch_size x seqlen x channel x height x width
             vis_feats = batch_samples['vis_feats']
 
             if self.USE_CUDA:
@@ -204,7 +204,7 @@ class VQATrainer(Trainer):
                 attention_mask = batch_samples['attention_mask']
                 # batch_size
                 labels = batch_samples['labels']
-                # batch_size x seqlen x height x width
+                # batch_size x seqlen x channel x height x width
                 vis_feats = batch_samples['vis_feats']
 
                 if self.USE_CUDA:
@@ -283,7 +283,7 @@ class VQATrainer(Trainer):
 
         #grabbing 10%, could be smarter about this...
         val_dataset = Subset(val_dataset, val_dataset.get_batches(int(100/eval_pct))[0])
-        # initialize constant loaders 
+        # initialize constant loaders
         val_loader = DataLoader(
             val_dataset, batch_size=self.batch_size, shuffle=False,
             num_workers=8)

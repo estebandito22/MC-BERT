@@ -52,6 +52,7 @@ class AttentionMechanism(nn.Module):
 
         # outputs batch_size x seqlen x cmb_feat_dim x height x width
         x = self.compose_func(vis_feats, txt_feats)
+        x = x.contiguous()
         x = x.view(bs * seqlen, self.cmb_feat_dim, height, width)
         x = self.conv1(x)
         x = F.relu(x)
