@@ -18,6 +18,7 @@ from mcbert.trainers.base_trainer import Trainer
 from mcbert.models.mcbert import MCBertModel
 from mcbert.models.classifier_head import ClassifierHeadModel
 from mcbert.models.mcboriginal import MCBOriginalModel
+from mcbert.models.mcblmonly import MCBLMOnlyModel
 from mcbert.models.layers.embedding.glove_embedder import GloveEmbedder
 from mcbert.models.layers.embedding.elmo_embedder import ElmoEmbedder
 
@@ -82,6 +83,12 @@ class VQATrainer(Trainer):
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, bidirectional=False,classification=True)
+        elif self.model_type == 'mcblmonly':
+            embedder = GloveEmbedder(self.vocab, 300)
+            mcb_model = MCBLMOnlyModel(embedder,
+                vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
+                hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
+                kernel_size=self.kernel_size, bidirectional=False,classification=True)
         elif self.model_type == 'mcb-bi':
             embedder = GloveEmbedder(self.vocab, 300)
             mcb_model = MCBOriginalModel(embedder,
@@ -133,7 +140,7 @@ class VQATrainer(Trainer):
         train_loss = 0
         samples_processed = 0
         correct = 0
-        loss_fct = torch.nn.NLLLoss()
+        loss_fct = torch.nn.NLLLoss(ignore_index=int(self.n_classes-1))
 
         for batch_samples in tqdm(loader):
 
