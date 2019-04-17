@@ -53,6 +53,7 @@ class VQADataset(Dataset):
         vis_feats = torch.load(vis_feats_path)
         vis_feats = vis_feats.unsqueeze(0).repeat(input_ids.size(0), 1, 1, 1)
         vis_feats = vis_feats.detach()
+        vis_feats.requires_grad_(False)
 
         return {'input_ids': input_ids,
                 'token_type_ids': token_type_ids,
