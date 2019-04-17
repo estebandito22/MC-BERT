@@ -80,17 +80,10 @@ class MCBOriginalModel(nn.Module):
         # batch_size x sequence_length x hidden_dim
         sequence_vis_feats = self.attention(vis_feats, orig_pooled_output)
 
-        #$print("after attn: sequence_output:", sequence_output.shape)
-        #print("affter attn: sequence_vis_feats:", sequence_vis_feats.shape)
-
         # batch_size x seqlen x cmb_feat_dim
         sequence_cmb_feats = self.compose(
             orig_pooled_output, sequence_vis_feats)
 
-        #print("after MCB: sequence_cmb_feats:", sequence_cmb_feats.shape)
-
         pooled_output = sequence_cmb_feats.squeeze(1)#[:,-1,:]
-
-        #print("pooled_output", pooled_output.shape)
 
         return sequence_cmb_feats, pooled_output
