@@ -11,9 +11,9 @@
 # Run.A
 PYTHONPATH=$PYTHONPATH:. python train_vqa.py \
     --model_type mcb \
-    --vis_feat_dim 2208 \
+    --vis_feat_dim 2048 \
     --spatial_size 14 \
-    --lm_hidden_dim 2208 \
+    --lm_hidden_dim 2048 \
     --cmb_feat_dim 16000 \
     --kernel_size 3 \
     --batch_size 8 \
