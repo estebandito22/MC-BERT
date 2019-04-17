@@ -5,14 +5,14 @@ import torch
 
 from mcbert.models.layers.visual.attention import AttentionMechanism
 from mcbert.models.layers.composition.mcb import MCB
-
+from compact_bilinear_pooling import CompactBilinearPooling as MCB2
 
 class MCBOriginalModel(nn.Module):
 
     """Class implementing MCB Model with visual attention."""
 
     def __init__(self, embedder, vis_feat_dim=2208, spatial_size=7,  hidden_dim = 2208,
-                 cmb_feat_dim=16000, kernel_size=3, bidirectional=False, classification = True ):
+                 cmb_feat_dim=16000, kernel_size=3, bidirectional=False, classification = True,  use_external_MCB = True ):
 
 
         """Initialize MCBertModel."""
@@ -37,9 +37,12 @@ class MCBOriginalModel(nn.Module):
 
         self.attention = AttentionMechanism(
             self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
-            self.kernel_size, self.hidden_dim)
+            self.kernel_size, self.hidden_dim,  use_external_MCB=use_external_MCB)
 
-        self.compose = MCB(self.vis_feat_dim, self.hidden_dim, self.cmb_feat_dim)
+        if use_external_MCB:
+            self.compose = MCB2(self.vis_feat_dim, self.hidden_dim, self.cmb_feat_dim)
+        else:
+            self.compose = MCB(self.vis_feat_dim, self.hidden_dim, self.cmb_feat_dim)
 
         # signed sqrt
 
@@ -79,18 +82,12 @@ class MCBOriginalModel(nn.Module):
 
         # batch_size x sequence_length x hidden_dim
         sequence_vis_feats = self.attention(vis_feats, orig_pooled_output)
-
-        #$print("after attn: sequence_output:", sequence_output.shape)
-        #print("affter attn: sequence_vis_feats:", sequence_vis_feats.shape)
+        #sequence_vis_feats = vis_feats.view(bs, 1, self.vis_feat_dim, -1).mean(-1)
 
         # batch_size x seqlen x cmb_feat_dim
         sequence_cmb_feats = self.compose(
             orig_pooled_output, sequence_vis_feats)
 
-        #print("after MCB: sequence_cmb_feats:", sequence_cmb_feats.shape)
-
         pooled_output = sequence_cmb_feats.squeeze(1)#[:,-1,:]
-
-        #print("pooled_output", pooled_output.shape)
 
         return sequence_cmb_feats, pooled_output

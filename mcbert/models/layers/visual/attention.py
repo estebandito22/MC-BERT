@@ -4,6 +4,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from mcbert.models.layers.composition.mcb import MCB
+from compact_bilinear_pooling import CompactBilinearPooling as MCB2
 
 
 class AttentionMechanism(nn.Module):
@@ -11,7 +12,7 @@ class AttentionMechanism(nn.Module):
     """AttentionMechanism."""
 
     def __init__(self, feat_dim, spatial_size, cmb_feat_dim, kernel_size,
-                 hidden_size):
+                 hidden_size, use_external_MCB=True):
         """
         Initialize AttentionMechanism.
 
@@ -38,7 +39,10 @@ class AttentionMechanism(nn.Module):
         self.conv2 = nn.Conv2d(
             in_channels=512, out_channels=1,
             kernel_size=self.kernel_size, padding=self.kernel_size // 2)
-        self.compose_func = MCB(self.feat_dim, self.hidden_size, self.cmb_feat_dim)
+        if use_external_MCB:
+            self.compose_func = MCB2(self.feat_dim, self.hidden_size, self.cmb_feat_dim)
+        else:
+            self.compose_func = MCB(self.feat_dim, self.hidden_size, self.cmb_feat_dim)
 
     def forward(self, vis_feats, txt_feats):
         """Forward Pass."""
@@ -50,8 +54,17 @@ class AttentionMechanism(nn.Module):
 
         bs, seqlen, vis_feat_dim, height, width = vis_feats.size()
 
+        #bs x (seq_len * height * width) x feat_dim
+        #TODO: note this currently only works if seq_len == 1
+        if use_external_MCB:
+            txt_feats = txt_feats.permute(0, 1, 3, 4, 2).contiguous().view(bs, -1, hidden_size)
+            vis_feats_transform = vis_feats.permute(0, 1, 3, 4, 2).contiguous().view(bs, -1, vis_feat_dim)
+        else:
+            vis_feats_transform = vis_feats
+
         # outputs batch_size x seqlen x cmb_feat_dim x height x width
-        x = self.compose_func(vis_feats, txt_feats)
+        x = self.compose_func(vis_feats_transform, txt_feats)
+        if use_external_MCB: x = x.permute(0, 2, 1)
         x = x.contiguous()
         x = x.view(bs * seqlen, self.cmb_feat_dim, height, width)
         x = self.conv1(x)
