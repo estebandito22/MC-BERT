@@ -23,6 +23,7 @@ PYTHONPATH=$PYTHONPATH:. python train_vqa.py \
     --eval_pct 3 \
     --n_classes 3001 \
     --max_sent_len 15 \
+    --skip_attention \
     --train_data_path /beegfs/cdr380/VQA/mscoco_train2014_featurized_resnet.csv \
     --val_data_path /beegfs/cdr380/VQA/mscoco_val2014_featurized_resnet.csv \
     --vocab_path /beegfs/cdr380/VQA/dict.txt \

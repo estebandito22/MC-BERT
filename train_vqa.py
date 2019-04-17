@@ -70,6 +70,10 @@ if __name__ == '__main__':
                     help="Location of vocab for training.")
     ap.add_argument("-sd", "--save_dir",
                     help="Location to save the model.")
+
+    ap.add_argument("-ua", "--skip_attention", action='store_true')
+    ap.add_argument("-ue", "--use_internal_MCB", action='store_true')
+
     # to continue training models
     ap.add_argument("-cp", "--continue_path",
                     help="Path to model for warm start.")
@@ -112,6 +116,8 @@ if __name__ == '__main__':
                      learning_rate=args['learning_rate'],
                      warmup_proportion=args['warmup_proportion'],
                      num_epochs=args['num_epochs'],
+                     use_attention=not args['skip_attention'],
+                     use_external_MCB=not args['use_internal_MCB'],
                      vocab=args['vocab_path'])
 
     if args['continue_path'] and args['continue_epoch']:

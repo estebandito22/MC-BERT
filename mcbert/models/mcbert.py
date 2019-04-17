@@ -17,7 +17,8 @@ class MCBertModel(nn.Module):
     """Class implementing MCBERT Model with visual attention."""
 
     def __init__(self, vis_feat_dim=2208, spatial_size=7, hidden_dim=768,
-                 cmb_feat_dim=16000, kernel_size=3, classification=False, use_external_MCB=True):
+                 cmb_feat_dim=16000, kernel_size=3, classification=False, 
+                 use_external_MCB=True, use_attention=True):
         """Initialize MCBertModel."""
         super(MCBertModel, self).__init__()
         self.vis_feat_dim = vis_feat_dim
@@ -26,15 +27,17 @@ class MCBertModel(nn.Module):
         self.cmb_feat_dim = cmb_feat_dim
         self.kernel_size = kernel_size
         self.classification = classification
+        self.use_attention = use_attention
 
         version = "bert-base-cased"
         self.bert_model = BertModel.from_pretrained(version)
         self.bert_layer = BertLayer(self.bert_model.config)
         self.bert_pooler = BertPooler(self.bert_model.config)
 
-        self.attention = AttentionMechanism(
-            self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
-            self.kernel_size, self.hidden_dim,  use_external_MCB = use_external_MCB)
+        if use_attention:
+            self.attention = AttentionMechanism(
+                self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
+                self.kernel_size, self.hidden_dim,  use_external_MCB = use_external_MCB)
 
         if use_external_MCB:
             self.compose = MCB2(self.vis_feat_dim, self.hidden_dim, self.hidden_dim)
@@ -56,8 +59,10 @@ class MCBertModel(nn.Module):
             # batch_size x 1 x hidden_dim
             cls_sequence_output = bert_sequence_output[:, 0, :].unsqueeze(1)
             cls_vis_feats = vis_feats[:, 0, :, :].unsqueeze(1)
-            cls_vis_feats = self.attention(cls_vis_feats, cls_sequence_output)
-            #cls_vis_feats = cls_vis_feats.view(cls_vis_feats.shape[0], 1, self.vis_feat_dim, -1).mean(-1)
+            if self.use_attention:
+                cls_vis_feats = self.attention(cls_vis_feats, cls_sequence_output)
+            else:
+                cls_vis_feats = cls_vis_feats.view(cls_vis_feats.shape[0], 1, self.vis_feat_dim, -1).mean(-1)
 
             # batch_size x 1 x cmb_feat_dim
             cls_cmb_feats = self.compose(

@@ -12,7 +12,8 @@ class MCBOriginalModel(nn.Module):
     """Class implementing MCB Model with visual attention."""
 
     def __init__(self, embedder, vis_feat_dim=2208, spatial_size=7,  hidden_dim = 2208,
-                 cmb_feat_dim=16000, kernel_size=3, bidirectional=False, classification = True,  use_external_MCB = True ):
+                 cmb_feat_dim=16000, kernel_size=3, bidirectional=False, 
+                 classification=True,  use_external_MCB=True, use_attention=True ):
 
 
         """Initialize MCBertModel."""
@@ -22,6 +23,7 @@ class MCBOriginalModel(nn.Module):
         self.hidden_dim = hidden_dim
         self.cmb_feat_dim = cmb_feat_dim
         self.kernel_size = kernel_size
+        self.use_attention = use_attention
 
         #hint to whatever head uses us - 
         self.output_dim = cmb_feat_dim
@@ -35,9 +37,10 @@ class MCBOriginalModel(nn.Module):
         self.lstm = nn.LSTM(embedder.get_size(), num_layers=2, hidden_size=lstm_hidden_dim, batch_first=True, bidirectional=bidirectional, dropout=0.3)
         self.drop = nn.Dropout(0.3)
 
-        self.attention = AttentionMechanism(
-            self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
-            self.kernel_size, self.hidden_dim,  use_external_MCB=use_external_MCB)
+        if use_attention:
+            self.attention = AttentionMechanism(
+                self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
+                self.kernel_size, self.hidden_dim,  use_external_MCB=use_external_MCB)
 
         if use_external_MCB:
             self.compose = MCB2(self.vis_feat_dim, self.hidden_dim, self.cmb_feat_dim)
@@ -81,8 +84,10 @@ class MCBOriginalModel(nn.Module):
         vis_feats = vis_feats[:, 0, :, :].unsqueeze(1)
 
         # batch_size x sequence_length x hidden_dim
-        sequence_vis_feats = self.attention(vis_feats, orig_pooled_output)
-        #sequence_vis_feats = vis_feats.view(bs, 1, self.vis_feat_dim, -1).mean(-1)
+        if self.use_attention:
+            sequence_vis_feats = self.attention(vis_feats, orig_pooled_output)
+        else:
+            sequence_vis_feats = vis_feats.view(bs, 1, self.vis_feat_dim, -1).mean(-1)
 
         # batch_size x seqlen x cmb_feat_dim
         sequence_cmb_feats = self.compose(
