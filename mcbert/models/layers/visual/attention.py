@@ -31,6 +31,7 @@ class AttentionMechanism(nn.Module):
         self.cmb_feat_dim = cmb_feat_dim
         self.kernel_size = kernel_size
         self.hidden_size = hidden_size
+        self.use_external_MCB = use_external_MCB
         assert self.kernel_size % 2 == 1, "kernel_size must be odd."
 
         self.conv1 = nn.Conv2d(
@@ -56,7 +57,7 @@ class AttentionMechanism(nn.Module):
 
         #bs x (seq_len * height * width) x feat_dim
         #TODO: note this currently only works if seq_len == 1
-        if use_external_MCB:
+        if self.use_external_MCB:
             txt_feats = txt_feats.permute(0, 1, 3, 4, 2).contiguous().view(bs, -1, hidden_size)
             vis_feats_transform = vis_feats.permute(0, 1, 3, 4, 2).contiguous().view(bs, -1, vis_feat_dim)
         else:
@@ -64,7 +65,7 @@ class AttentionMechanism(nn.Module):
 
         # outputs batch_size x seqlen x cmb_feat_dim x height x width
         x = self.compose_func(vis_feats_transform, txt_feats)
-        if use_external_MCB: x = x.permute(0, 2, 1)
+        if self.use_external_MCB: x = x.permute(0, 2, 1)
         x = x.contiguous()
         x = x.view(bs * seqlen, self.cmb_feat_dim, height, width)
         x = self.conv1(x)
