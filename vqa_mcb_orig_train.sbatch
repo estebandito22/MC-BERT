@@ -11,15 +11,15 @@
 # Run.A
 PYTHONPATH=$PYTHONPATH:. python train_vqa.py \
     --model_type mcb \
-    --vis_feat_dim 2208 \
+    --vis_feat_dim 2048 \
     --spatial_size 14 \
-    --lm_hidden_dim 2208 \
+    --lm_hidden_dim 2048 \
     --cmb_feat_dim 16000 \
     --kernel_size 3 \
     --batch_size 8 \
     --learning_rate 0.001\
     --num_epochs 1000 \
-    --train_blocks 20 \
+    --train_blocks 10 \
     --eval_pct 3 \
     --n_classes 3001 \
     --max_sent_len 15 \
