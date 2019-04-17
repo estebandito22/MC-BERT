@@ -140,7 +140,7 @@ class VQATrainer(Trainer):
         train_loss = 0
         samples_processed = 0
         correct = 0
-        loss_fct = torch.nn.NLLLoss(ignore_index=int(self.n_classes-1))
+        loss_fct = torch.nn.NLLLoss(ignore_index=int(self.n_classes - 1))
 
         for batch_samples in tqdm(loader):
 
