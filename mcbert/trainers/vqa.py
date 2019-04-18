@@ -93,8 +93,7 @@ class VQATrainer(Trainer):
             mcb_model = MCBLMOnlyModel(embedder,
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
-                kernel_size=self.kernel_size, bidirectional=False,classification=True,
-                use_attention=self.use_attention, use_external_MCB=self.use_external_MCB)
+                kernel_size=self.kernel_size, bidirectional=False,classification=True)
         elif self.model_type == 'mcb-bi':
             embedder = GloveEmbedder(self.vocab, 300)
             mcb_model = MCBOriginalModel(embedder,
