@@ -8,7 +8,7 @@ class ConcatProject(nn.Module):
 
     """Class to concatenate and project word embeddings."""
 
-    def __init__(self, feat_dim, cmb_feat_dim):
+    def __init__(self, vis_feat_dim, feat_dim, cmb_feat_dim):
         """
         Initialize ConcatProject.
 
@@ -19,9 +19,15 @@ class ConcatProject(nn.Module):
 
         """
         super(ConcatProject, self).__init__()
+        self.vis_feat_dim = vis_feat_dim
         self.feat_dim = feat_dim
         self.cmb_feat_dim = cmb_feat_dim
-        self.proj = nn.Linear(self.feat_dim * 2, self.cmb_feat_dim)
+        self.proj = nn.Linear(
+            self.vis_feat_dim + self.feat_dim, self.cmb_feat_dim)
+        self.drop = nn.Dropout(0.1)
+
+    def signed_sqrt(self, x):
+        return torch.mul(torch.sign(x), torch.sqrt(torch.abs(x) + 1e-12))
 
     def forward(self, vis_feats, txt_feats):
         """Forward Pass."""
@@ -35,6 +41,10 @@ class ConcatProject(nn.Module):
 
         if x.dim() == 5:
             x.permute(0, 1, 4, 2, 3)
+
+        x = self.signed_sqrt(x)
+        x = nn.functional.normalize(x, p=2, dim=2)
+        x = self.drop(x)
 
         # batch size x * x cmb_feat_dim (x height x width)
         return x
