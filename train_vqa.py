@@ -42,6 +42,8 @@ if __name__ == '__main__':
                     help="Kernel size for visual attention.")
     ap.add_argument("-do", "--dropout", type=float, default=0.2,
                     help="Dropout for classifier head.")
+    ap.add_argument("-wd", "--weight_decay", type=float, default=1e-6,
+                    help="Weight decay for nonbert models.")
     ap.add_argument("-sl", "--max_sent_len", type=int, default=64,
                     help="the max sentence length.")
     ap.add_argument("-nc", "--n_classes", type=int, default=3000,
@@ -122,6 +124,7 @@ if __name__ == '__main__':
                      use_attention=not args['skip_attention'],
                      use_external_MCB=not args['use_internal_MCB'],
                      use_batchnorm=args['use_batchnorm'],
+                     weight_decay=args['weight_decay'],
                      vocab=args['vocab_path'])
 
     if args['continue_path'] and args['continue_epoch']:

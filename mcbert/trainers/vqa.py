@@ -31,7 +31,8 @@ class VQATrainer(Trainer):
                  lm_hidden_dim=768, cmb_feat_dim=16000, kernel_size=3,
                  dropout=0.2, n_classes=3000, batch_size=64,
                  learning_rate=3e-5, warmup_proportion=0.1, num_epochs=100, vocab=None,
-                 use_attention=True, use_external_MCB=True, use_batchnorm=False):
+                 use_attention=True, use_external_MCB=True, use_batchnorm=False,
+                 weight_decay=1e-6):
         """
         Initialize BertMBC model.
 
@@ -63,6 +64,7 @@ class VQATrainer(Trainer):
         self.use_attention=use_attention
         self.use_external_MCB=use_external_MCB
         self.use_batchnorm=use_batchnorm
+        self.weight_decay=weight_decay
 
         # Model attributes
         self.model = None
@@ -140,7 +142,8 @@ class VQATrainer(Trainer):
             self.scheduler = None
         else:
             self.optimizer = Adam(
-                self.model.parameters(), lr=self.learning_rate)
+                self.model.parameters(), lr=self.learning_rate,
+                weight_decay=self.weight_decay)
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
 
         if self.USE_CUDA:
@@ -284,20 +287,23 @@ class VQATrainer(Trainer):
                Combined Feature Dimension: {}\n\
                Kernel Size: {}\n\
                Dropout: {}\n\
+               Weight Decay: {}\n\
                Learning Rate: {}\n\
                Batch Size: {}\n\
                Chunks per epoch: {}\n\
                Eval Pct: {}\n\
                Warmup Proportion: {}\n\
                N Classes: {}\n\
-               Use Attention {}\n\
-               Use External MCB {}\n\
+               Use Attention: {}\n\
+               Use External MCB: {}\n\
+               Use Batchnorm: {}\n\
                Save Dir: {}".format(
                    self.model_type, self.vis_feat_dim, self.spatial_size,
                    self.lm_hidden_dim, self.cmb_feat_dim, self.kernel_size,
-                   self.dropout, self.learning_rate, self.batch_size,
-                   train_chunks, eval_pct, self.warmup_proportion,
-                   self.n_classes, self.use_attention, self.use_external_MCB,
+                   self.dropout, self.weight_decay, self.learning_rate,
+                   self.batch_size, train_chunks, eval_pct,
+                   self.warmup_proportion, self.n_classes, self.use_attention,
+                   self.use_external_MCB, self.use_batchnorm,
                    save_dir), flush=True)
 
         # concat validation datasets
@@ -398,11 +404,12 @@ class VQATrainer(Trainer):
         return loaders
 
     def _format_model_subdir(self):
-        subdir = "BMCB_mt{}vfd{}ss{}bhd{}cfd{}ks{}lr{}wp{}do{}nc{}".\
+        subdir = "BMCB_mt{}vfd{}ss{}bhd{}cfd{}ks{}lr{}wp{}do{}nc{}wd{}bn{}".\
                 format(self.model_type, self.vis_feat_dim, self.spatial_size,
                        self.lm_hidden_dim, self.cmb_feat_dim,
                        self.kernel_size, self.learning_rate,
-                       self.warmup_proportion, self.dropout, self.n_classes)
+                       self.warmup_proportion, self.dropout, self.n_classes,
+                       self.weight_decay, self.use_batchnorm)
         return subdir
 
     def save(self):
