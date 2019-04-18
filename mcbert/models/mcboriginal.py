@@ -34,9 +34,11 @@ class MCBOriginalModel(nn.Module):
         lstm_hidden_dim = int(hidden_dim / 2 / (2 if bidirectional else 1))
 
         self.embedder = embedder
+        self.init_weights(self.embedder)
 
-        # TODO: initialize weights weight_filler=dict(type='uniform',min=-0.08,max=0.08)
         self.lstm = nn.LSTM(embedder.get_size(), num_layers=2, hidden_size=lstm_hidden_dim, batch_first=True, bidirectional=bidirectional, dropout=0.3)
+        self.init_weights(self.lstm)
+
         self.drop = nn.Dropout(0.3)
 
         if use_attention:
@@ -50,7 +52,15 @@ class MCBOriginalModel(nn.Module):
         else:
             self.compose = MCB(self.vis_feat_dim, self.hidden_dim, self.cmb_feat_dim)
 
-        # signed sqrt
+
+    # using initlization settings from MCB
+    def init_weights(self, module):
+        for param in module.state_dict():
+            if "weight" in param:
+                nn.init.uniform_(module.state_dict()[param], a=-0.8, b=0.8)
+            if "bias" in param:
+                torch.nn.init.constant_(module.state_dict()[param], 0)
+
 
     def forward(self, vis_feats, input_ids, token_type_ids=None,
                 attention_mask=None):

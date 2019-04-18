@@ -16,7 +16,7 @@ class ElmoEmbedder(torch.nn.Module):
 
         super(ElmoEmbedder, self).__init__()
         
-        self.elmo = Elmo(options_file, weights_file, 1, requires_grad=True) 
+        self.elmo = Elmo(options_file, weights_file, 1, requires_grad=False) 
         
         if torch.cuda.is_available():
             self.elmo = self.elmo.cuda()
