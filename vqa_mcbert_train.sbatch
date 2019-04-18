@@ -27,4 +27,4 @@ PYTHONPATH=$PYTHONPATH:. python train_vqa.py \
     --train_data_path /beegfs/cdr380/VQA/mscoco_train2014_featurized_resnet.csv \
     --val_data_path /beegfs/cdr380/VQA/mscoco_val2014_featurized_resnet.csv \
     --vocab_path /beegfs/swc419/MC-BERT/data/bert-base-cased-vocab.txt \
-    --save_dir saved_models/vqa_mcbert_resnet
+    --save_dir /beegfs/ijh216/saved_models/vqa_mcbert_resnet
