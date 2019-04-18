@@ -12,8 +12,9 @@ class MCBOriginalModel(nn.Module):
     """Class implementing MCB Model with visual attention."""
 
     def __init__(self, embedder, vis_feat_dim=2208, spatial_size=7,  hidden_dim = 2208,
-                 cmb_feat_dim=16000, kernel_size=3, bidirectional=False, 
-                 classification=True,  use_external_MCB=True, use_attention=True ):
+                 cmb_feat_dim=16000, kernel_size=3, bidirectional=False,
+                 classification=True,  use_external_MCB=True, use_attention=True,
+                 use_batchnorm=False):
 
 
         """Initialize MCBertModel."""
@@ -24,8 +25,9 @@ class MCBOriginalModel(nn.Module):
         self.cmb_feat_dim = cmb_feat_dim
         self.kernel_size = kernel_size
         self.use_attention = use_attention
+        self.use_batchnorm = use_batchnorm
 
-        #hint to whatever head uses us - 
+        #hint to whatever head uses us -
         self.output_dim = cmb_feat_dim
 
         #each layer (or direction) gets its own part
@@ -40,7 +42,8 @@ class MCBOriginalModel(nn.Module):
         if use_attention:
             self.attention = AttentionMechanism(
                 self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
-                self.kernel_size, self.hidden_dim,  use_external_MCB=use_external_MCB)
+                self.kernel_size, self.hidden_dim,  use_external_MCB=use_external_MCB,
+                use_batchnorm=use_batchnorm)
 
         if use_external_MCB:
             self.compose = MCB2(self.vis_feat_dim, self.hidden_dim, self.cmb_feat_dim)

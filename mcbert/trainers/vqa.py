@@ -31,7 +31,7 @@ class VQATrainer(Trainer):
                  lm_hidden_dim=768, cmb_feat_dim=16000, kernel_size=3,
                  dropout=0.2, n_classes=3000, batch_size=64,
                  learning_rate=3e-5, warmup_proportion=0.1, num_epochs=100, vocab=None,
-                 use_attention=True, use_external_MCB=True):
+                 use_attention=True, use_external_MCB=True, use_batchnorm=False):
         """
         Initialize BertMBC model.
 
@@ -62,6 +62,7 @@ class VQATrainer(Trainer):
         self.num_epochs = num_epochs
         self.use_attention=use_attention
         self.use_external_MCB=use_external_MCB
+        self.use_batchnorm=use_batchnorm
 
         # Model attributes
         self.model = None
@@ -79,15 +80,17 @@ class VQATrainer(Trainer):
             mcb_model = MCBertModel(
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
-                kernel_size=self.kernel_size, classification=True, 
-                use_attention=self.use_attention, use_external_MCB=self.use_external_MCB)
+                kernel_size=self.kernel_size, classification=True,
+                use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
+                use_batchnorm=self.use_batchnorm)
         elif self.model_type == 'mcb':
             embedder = GloveEmbedder(self.vocab, 300)
             mcb_model = MCBOriginalModel(embedder,
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, bidirectional=False,classification=True,
-                use_attention=self.use_attention, use_external_MCB=self.use_external_MCB)
+                use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
+                use_batchnorm=self.use_batchnorm)
         elif self.model_type == 'mcblmonly':
             embedder = GloveEmbedder(self.vocab, 300)
             mcb_model = MCBLMOnlyModel(embedder,
@@ -100,14 +103,16 @@ class VQATrainer(Trainer):
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, bidirectional=True, classification=True,
-                use_attention=self.use_attention, use_external_MCB=self.use_external_MCB)
+                use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
+                use_batchnorm=self.use_batchnorm)
         elif self.model_type == 'mc-elmo':
             embedder = ElmoEmbedder()
             mcb_model = MCBOriginalModel(embedder,
                  vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                  hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                  kernel_size=self.kernel_size, bidirectional=True, classification=True,
-                 use_attention=self.use_attention, use_external_MCB=self.use_external_MCB)
+                 use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
+                 use_batchnorm=self.use_batchnorm)
         else:
             raise ValueError("Did not recognize model type!")
 
@@ -292,7 +297,7 @@ class VQATrainer(Trainer):
                    self.lm_hidden_dim, self.cmb_feat_dim, self.kernel_size,
                    self.dropout, self.learning_rate, self.batch_size,
                    train_chunks, eval_pct, self.warmup_proportion,
-                   self.n_classes, self.use_attention, self.use_external_MCB, 
+                   self.n_classes, self.use_attention, self.use_external_MCB,
                    save_dir), flush=True)
 
         # concat validation datasets

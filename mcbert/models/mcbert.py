@@ -17,8 +17,8 @@ class MCBertModel(nn.Module):
     """Class implementing MCBERT Model with visual attention."""
 
     def __init__(self, vis_feat_dim=2208, spatial_size=7, hidden_dim=768,
-                 cmb_feat_dim=16000, kernel_size=3, classification=False, 
-                 use_external_MCB=True, use_attention=True):
+                 cmb_feat_dim=16000, kernel_size=3, classification=False,
+                 use_external_MCB=True, use_attention=True, use_batchnorm=False):
         """Initialize MCBertModel."""
         super(MCBertModel, self).__init__()
         self.vis_feat_dim = vis_feat_dim
@@ -28,6 +28,7 @@ class MCBertModel(nn.Module):
         self.kernel_size = kernel_size
         self.classification = classification
         self.use_attention = use_attention
+        self.use_batchnorm = use_batchnorm
 
         version = "bert-base-cased"
         self.bert_model = BertModel.from_pretrained(version)
@@ -37,7 +38,8 @@ class MCBertModel(nn.Module):
         if use_attention:
             self.attention = AttentionMechanism(
                 self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
-                self.kernel_size, self.hidden_dim,  use_external_MCB = use_external_MCB)
+                self.kernel_size, self.hidden_dim,  use_external_MCB = use_external_MCB,
+                use_batchnorm=use_batchnorm)
 
         if use_external_MCB:
             self.compose = MCB2(self.vis_feat_dim, self.hidden_dim, self.hidden_dim)

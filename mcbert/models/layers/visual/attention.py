@@ -1,5 +1,6 @@
 """Class for conv attention from https://arxiv.org/pdf/1606.01847.pdf."""
 
+import torch
 from torch import nn
 import torch.nn.functional as F
 
@@ -12,7 +13,7 @@ class AttentionMechanism(nn.Module):
     """AttentionMechanism."""
 
     def __init__(self, feat_dim, spatial_size, cmb_feat_dim, kernel_size,
-                 hidden_size, use_external_MCB=True):
+                 hidden_size, use_external_MCB=True, use_batchnorm=False):
         """
         Initialize AttentionMechanism.
 
@@ -32,13 +33,15 @@ class AttentionMechanism(nn.Module):
         self.kernel_size = kernel_size
         self.hidden_size = hidden_size
         self.use_external_MCB = use_external_MCB
+        self.use_batchnorm = use_batchnorm
         assert self.kernel_size % 2 == 1, "kernel_size must be odd."
 
+        self.bn1 = nn.BatchNorm2d(self.cmb_feat_dim)
         self.conv1 = nn.Conv2d(
             in_channels=self.cmb_feat_dim, out_channels=512,
             kernel_size=self.kernel_size, padding=self.kernel_size // 2)
-        self.conv2 = nn.Conv2d(
-            in_channels=512, out_channels=1,
+        self.bn2 = nn.BatchNorm2d(512)
+        self.conv2 = nn.Conv2d(in_channels=512, out_channels=2,
             kernel_size=self.kernel_size, padding=self.kernel_size // 2)
         if use_external_MCB:
             self.compose_func = MCB2(self.feat_dim, self.hidden_size, self.cmb_feat_dim)
@@ -68,16 +71,23 @@ class AttentionMechanism(nn.Module):
         if self.use_external_MCB: x = x.permute(0, 2, 1)
         x = x.contiguous()
         x = x.view(bs * seqlen, self.cmb_feat_dim, height, width)
+        if self.use_batchnorm:
+            x = self.bn1(x)
         x = self.conv1(x)
+        if self.use_batchnorm:
+            x = self.bn2(x)
         x = F.relu(x)
         x = self.conv2(x)
 
-        # batch_size x seqlen x 1 x height x width
-        x = x.view(bs, seqlen, 1, -1)
-        attn_weights = F.softmax(x, dim=-1).view(bs, seqlen, 1, height, width)
+        # batch_size x seqlen x 2 x height * width
+        x = x.view(bs, seqlen, 2, -1)
+        attn_weights = F.softmax(x, dim=-1).view(bs, seqlen, 2, height, width)
 
         # batch_size x seqlen x hidden_size x height x width
-        attn_vect = vis_feats * attn_weights
+        # attn_vect = vis_feats * attn_weights
+        vis_attended1 = vis_feats * attn_weights[:, :, 0, :, :].unsqueeze(2)
+        vis_attended2 = vis_feats * attn_weights[:, :, 1, :, :].unsqueeze(2)
+        attn_vect = torch.cat([vis_attended1, vis_attended2], dim=2)
 
         # batch_size x seqlen x hidden_size
         return attn_vect.view(bs, seqlen, vis_feat_dim, -1).sum(dim=-1)

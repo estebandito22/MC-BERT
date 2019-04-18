@@ -73,6 +73,7 @@ if __name__ == '__main__':
 
     ap.add_argument("-ua", "--skip_attention", action='store_true')
     ap.add_argument("-ue", "--use_internal_MCB", action='store_true')
+    ap.add_argument("-ub", "--use_batchnorm", action='store_true')
 
     # to continue training models
     ap.add_argument("-cp", "--continue_path",
@@ -98,7 +99,9 @@ if __name__ == '__main__':
         print("unknown model type", args['model_type'])
         exit(1)
     if not args['report_file']:
-        train_dataset = VQADataset(pd.read_csv(args['train_data_path'], header=None), tokenizer, args['n_classes'], max_sent_len=args['max_sent_len'])
+        train_df = pd.read_csv(args['train_data_path'], header=None)
+        train_df = train_df[train_df[2] < args['n_classes']].copy()
+        train_dataset = VQADataset(train_df, tokenizer, args['n_classes'], max_sent_len=args['max_sent_len'])
     else:
         train_dataset = []
 
@@ -118,6 +121,7 @@ if __name__ == '__main__':
                      num_epochs=args['num_epochs'],
                      use_attention=not args['skip_attention'],
                      use_external_MCB=not args['use_internal_MCB'],
+                     use_batchnorm=args['use_batchnorm'],
                      vocab=args['vocab_path'])
 
     if args['continue_path'] and args['continue_epoch']:
