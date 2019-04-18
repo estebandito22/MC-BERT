@@ -62,22 +62,23 @@ class ImgFeaturizer(object):
             dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
 
         feature_paths = []
-        for batch_samples in tqdm(loader):
-            img = batch_samples['img']
+        with torch.no_grad():
+            for batch_samples in tqdm(loader):
+                img = batch_samples['img']
 
-            if self.USE_CUDA:
-                img = img.cuda()
+                if self.USE_CUDA:
+                    img = img.cuda()
 
-            img_features = self.features(img)
-            img_features = torch.unbind(img_features, dim=0)
-            batch_feature_paths = batch_samples['img_path']
-            for i, img_feature in enumerate(img_features):
-                f = batch_feature_paths[i]
-                f = os.path.join(
-                    self.save_dir,
-                    f.rpartition('/')[-1].replace('.jpg', '.pth'))
-                torch.save(img_feature.cpu(), f)
-                feature_paths.append(f)
+                img_features = self.features(img)
+                img_features = torch.unbind(img_features, dim=0)
+                batch_feature_paths = batch_samples['img_path']
+                for i, img_feature in enumerate(img_features):
+                    f = batch_feature_paths[i]
+                    f = os.path.join(
+                        self.save_dir,
+                        f.rpartition('/')[-1].replace('.jpg', '.pth'))
+                    torch.save(img_feature.cpu(), f)
+                    feature_paths.append(f)
 
         metadata = loader.dataset.metadata
         metadata['feature_paths'] = feature_paths
