@@ -49,10 +49,6 @@ class MCBTokenizer():
 
 class MCBDict:
 
-    id2token = []
-    token2id = {}
-
-    glove_embds = []
 
     PAD = "<PAD>"
     OOV = "<OOV>"
@@ -65,6 +61,10 @@ class MCBDict:
     EOS_IDX = 3
 
     def __init__(self, metadata):
+        self.id2token = []
+        self.token2id = {}
+
+        self.glove_embds = []
         self.id2token.append(self.PAD)
         self.id2token.append(self.OOV)
         self.id2token.append(self.SOS)
@@ -74,10 +74,10 @@ class MCBDict:
         self.glove_embds.append([0] * 300)
         self.glove_embds.append([0] * 300)
 
-        self.token2id[self.PAD] = 0
-        self.token2id[self.PAD] = 1
-        self.token2id[self.PAD] = 2
-        self.token2id[self.PAD] = 3
+        self.token2id[self.PAD] = self.PAD_IDX
+        self.token2id[self.OOV] = self.OOV_IDX
+        self.token2id[self.SOS] = self.SOS_IDX
+        self.token2id[self.EOS] = self.EOS_IDX
 
         pos = len(self.id2token)
 
