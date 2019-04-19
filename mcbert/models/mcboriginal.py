@@ -104,6 +104,9 @@ class MCBOriginalModel(nn.Module):
         #some tasks require the visual features to be tiled, but we just need a single copy here
         vis_feats = vis_feats[:, 0, :, :].unsqueeze(1)
 
+
+        vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
+
         # batch_size x sequence_length x hidden_dim
         if self.use_attention:
             sequence_vis_feats = self.attention(vis_feats, orig_pooled_output)
