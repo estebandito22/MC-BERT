@@ -18,7 +18,6 @@ from mcbert.trainers.base_trainer import Trainer
 from mcbert.models.mcbert import MCBertModel
 from mcbert.models.classifier_head import ClassifierHeadModel
 from mcbert.models.mcboriginal import MCBOriginalModel
-from mcbert.models.mcblmonly import MCBLMOnlyModel
 from mcbert.models.layers.embedding.glove_embedder import GloveEmbedder
 from mcbert.models.layers.embedding.elmo_embedder import ElmoEmbedder
 
@@ -276,6 +275,7 @@ class VQATrainer(Trainer):
         # Print settings to output file
         print("Settings:\n\
                Model Type: {}\n\
+               Language Model Only: {}\n\
                Visual Feature Dimension: {}\n\
                Spatial Size: {}\n\
                LM Hidden Dimension: {}\n\
@@ -293,7 +293,7 @@ class VQATrainer(Trainer):
                Use External MCB: {}\n\
                Use Batchnorm: {}\n\
                Save Dir: {}".format(
-                   self.model_type, self.vis_feat_dim, self.spatial_size,
+                   self.model_type, self.lm_only, self.vis_feat_dim, self.spatial_size,
                    self.lm_hidden_dim, self.cmb_feat_dim, self.kernel_size,
                    self.dropout, self.weight_decay, self.learning_rate,
                    self.batch_size, train_chunks, eval_pct,
