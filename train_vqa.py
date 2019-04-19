@@ -76,6 +76,7 @@ if __name__ == '__main__':
     ap.add_argument("-ua", "--skip_attention", action='store_true')
     ap.add_argument("-ue", "--use_internal_MCB", action='store_true')
     ap.add_argument("-ub", "--use_batchnorm", action='store_true')
+    ap.add_argument("-lm", "--use_lm_only", action='store_true')
 
     # to continue training models
     ap.add_argument("-cp", "--continue_path",
@@ -124,6 +125,7 @@ if __name__ == '__main__':
                      use_attention=not args['skip_attention'],
                      use_external_MCB=not args['use_internal_MCB'],
                      use_batchnorm=args['use_batchnorm'],
+                     lm_only=args['use_lm_only'],
                      weight_decay=args['weight_decay'],
                      vocab=args['vocab_path'])
 
