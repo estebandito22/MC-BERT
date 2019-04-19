@@ -20,9 +20,10 @@ class VQADataset(Dataset):
         self.tokenizer = tokenizer
         self.n_classes = n_classes
 
-    def get_batches(self, k=10):
+    def get_batches(self, k=10, seed=None):
         """Return index batches of inputs."""
         indexes = [x for x in range(len(self))]
+        if seed: np.random.seed(seed)
         np.random.shuffle(indexes)
         s = 0
         size = int(np.ceil(len(indexes) / k))
