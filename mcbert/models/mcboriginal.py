@@ -14,7 +14,7 @@ class MCBOriginalModel(nn.Module):
     def __init__(self, embedder, vis_feat_dim=2208, spatial_size=7,  hidden_dim = 2208,
                  cmb_feat_dim=16000, kernel_size=3, bidirectional=False,
                  classification=True,  use_external_MCB=True, use_attention=True,
-                 use_batchnorm=False):
+                 use_batchnorm=False, lm_only = False):
 
 
         """Initialize MCBertModel."""
@@ -26,9 +26,13 @@ class MCBOriginalModel(nn.Module):
         self.kernel_size = kernel_size
         self.use_attention = use_attention
         self.use_batchnorm = use_batchnorm
+        self.lm_only = lm_only
 
         #hint to whatever head uses us -
-        self.output_dim = cmb_feat_dim
+        if lm_only:
+            self.output_dim = hidden_dim
+        else:
+            self.output_dim = cmb_feat_dim
 
         #each layer (or direction) gets its own part
         lstm_hidden_dim = int(hidden_dim / 2 / (2 if bidirectional else 1))
@@ -93,8 +97,15 @@ class MCBOriginalModel(nn.Module):
 
         orig_pooled_output = hlayers.view(bs, -1).unsqueeze(1)
 
+        if self.lm_only:
+            orig_pooled_output = orig_pooled_output.squeeze(1)
+            return _, orig_pooled_output
+
         #some tasks require the visual features to be tiled, but we just need a single copy here
         vis_feats = vis_feats[:, 0, :, :].unsqueeze(1)
+
+
+        vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
 
         # batch_size x sequence_length x hidden_dim
         if self.use_attention:

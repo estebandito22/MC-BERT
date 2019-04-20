@@ -18,7 +18,6 @@ from mcbert.trainers.base_trainer import Trainer
 from mcbert.models.mcbert import MCBertModel
 from mcbert.models.classifier_head import ClassifierHeadModel
 from mcbert.models.mcboriginal import MCBOriginalModel
-from mcbert.models.mcblmonly import MCBLMOnlyModel
 from mcbert.models.layers.embedding.glove_embedder import GloveEmbedder
 from mcbert.models.layers.embedding.elmo_embedder import ElmoEmbedder
 
@@ -32,7 +31,7 @@ class VQATrainer(Trainer):
                  dropout=0.2, n_classes=3000, batch_size=64,
                  learning_rate=3e-5, warmup_proportion=0.1, num_epochs=100, vocab=None,
                  use_attention=True, use_external_MCB=True, use_batchnorm=False,
-                 weight_decay=1e-6):
+                 weight_decay=1e-6, lm_only=False):
         """
         Initialize BertMBC model.
 
@@ -65,6 +64,7 @@ class VQATrainer(Trainer):
         self.use_external_MCB=use_external_MCB
         self.use_batchnorm=use_batchnorm
         self.weight_decay=weight_decay
+        self.lm_only = lm_only
 
         # Model attributes
         self.model = None
@@ -84,7 +84,7 @@ class VQATrainer(Trainer):
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, classification=True,
                 use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
-                use_batchnorm=self.use_batchnorm)
+                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only)
         elif self.model_type == 'mcb':
             embedder = GloveEmbedder(self.vocab, 300)
             mcb_model = MCBOriginalModel(embedder,
@@ -92,13 +92,7 @@ class VQATrainer(Trainer):
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, bidirectional=False,classification=True,
                 use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
-                use_batchnorm=self.use_batchnorm)
-        elif self.model_type == 'mcblmonly':
-            embedder = GloveEmbedder(self.vocab, 300)
-            mcb_model = MCBLMOnlyModel(embedder,
-                vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
-                hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
-                kernel_size=self.kernel_size, bidirectional=False,classification=True)
+                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only)
         elif self.model_type == 'mcb-bi':
             embedder = GloveEmbedder(self.vocab, 300)
             mcb_model = MCBOriginalModel(embedder,
@@ -106,7 +100,7 @@ class VQATrainer(Trainer):
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, bidirectional=True, classification=True,
                 use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
-                use_batchnorm=self.use_batchnorm)
+                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only)
         elif self.model_type == 'mc-elmo':
             embedder = ElmoEmbedder()
             mcb_model = MCBOriginalModel(embedder,
@@ -114,7 +108,7 @@ class VQATrainer(Trainer):
                  hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                  kernel_size=self.kernel_size, bidirectional=True, classification=True,
                  use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
-                 use_batchnorm=self.use_batchnorm)
+                 use_batchnorm=self.use_batchnorm, lm_only=self.lm_only)
         else:
             raise ValueError("Did not recognize model type!")
 
@@ -148,7 +142,7 @@ class VQATrainer(Trainer):
             self.optimizer = Adam(
                 self.model.parameters(), lr=self.learning_rate,
                 weight_decay=self.weight_decay)
-            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min')
+            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', verbose=True)
 
         if self.USE_CUDA:
             self.model = self.model.cuda()
@@ -285,6 +279,7 @@ class VQATrainer(Trainer):
         # Print settings to output file
         print("Settings:\n\
                Model Type: {}\n\
+               Language Model Only: {}\n\
                Visual Feature Dimension: {}\n\
                Spatial Size: {}\n\
                LM Hidden Dimension: {}\n\
@@ -302,7 +297,7 @@ class VQATrainer(Trainer):
                Use External MCB: {}\n\
                Use Batchnorm: {}\n\
                Save Dir: {}".format(
-                   self.model_type, self.vis_feat_dim, self.spatial_size,
+                   self.model_type, self.lm_only, self.vis_feat_dim, self.spatial_size,
                    self.lm_hidden_dim, self.cmb_feat_dim, self.kernel_size,
                    self.dropout, self.weight_decay, self.learning_rate,
                    self.batch_size, train_chunks, eval_pct,
@@ -314,7 +309,7 @@ class VQATrainer(Trainer):
         self.save_dir = save_dir
 
         #grabbing 10%, could be smarter about this...
-        val_dataset = Subset(val_dataset, val_dataset.get_batches(int(100/eval_pct))[0])
+        val_dataset = Subset(val_dataset, val_dataset.get_batches(int(100/eval_pct),seed=1007)[0])
         # initialize constant loaders
         val_loader = DataLoader(
             val_dataset, batch_size=self.batch_size, shuffle=False,

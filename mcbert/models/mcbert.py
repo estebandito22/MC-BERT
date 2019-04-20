@@ -18,7 +18,9 @@ class MCBertModel(nn.Module):
 
     def __init__(self, vis_feat_dim=2208, spatial_size=7, hidden_dim=768,
                  cmb_feat_dim=16000, kernel_size=3, classification=False,
-                 use_external_MCB=True, use_attention=True, use_batchnorm=False):
+                 use_external_MCB=True, use_attention=True, use_batchnorm=False,
+                 lm_only=False):
+
         """Initialize MCBertModel."""
         super(MCBertModel, self).__init__()
         self.vis_feat_dim = vis_feat_dim
@@ -29,6 +31,7 @@ class MCBertModel(nn.Module):
         self.classification = classification
         self.use_attention = use_attention
         self.use_batchnorm = use_batchnorm
+        self.lm_only = lm_only
 
         version = "bert-base-cased"
         self.bert_model = BertModel.from_pretrained(version)
@@ -57,30 +60,34 @@ class MCBertModel(nn.Module):
             input_ids, token_type_ids, attention_mask,
             output_all_encoded_layers=False)
 
-        if self.classification:
-            # batch_size x 1 x hidden_dim
-            cls_sequence_output = bert_sequence_output[:, 0, :].unsqueeze(1)
-            cls_vis_feats = vis_feats[:, 0, :, :].unsqueeze(1)
-            if self.use_attention:
-                cls_vis_feats = self.attention(cls_vis_feats, cls_sequence_output)
-            else:
-                cls_vis_feats = cls_vis_feats.view(cls_vis_feats.shape[0], 1, self.vis_feat_dim, -1).mean(-1)
-
-            # batch_size x 1 x cmb_feat_dim
-            cls_cmb_feats = self.compose(
-                cls_vis_feats, cls_sequence_output)
-
-            # batch_size x seqlen x hidden_dim
-            sequence_cmb_feats = torch.cat(
-                [cls_cmb_feats, bert_sequence_output[:, 1:, :]], dim=1)
+        if self.lm_only:
+            sequence_cmb_feats = bert_sequence_output[:, 0, :].unsqueeze(1)
         else:
-            # batch_size x sequence_length x hidden_dim
-            sequence_vis_feats = self.attention(
-                vis_feats, bert_sequence_output)
 
-            # batch_size x seqlen x hidden_dim
-            sequence_cmb_feats = self.compose(
-                sequence_vis_feats, bert_sequence_output )
+            if self.classification:
+                # batch_size x 1 x hidden_dim
+                cls_sequence_output = bert_sequence_output[:, 0, :].unsqueeze(1)
+                cls_vis_feats = vis_feats[:, 0, :, :].unsqueeze(1)
+                if self.use_attention:
+                    cls_vis_feats = self.attention(cls_vis_feats, cls_sequence_output)
+                else:
+                    cls_vis_feats = cls_vis_feats.view(cls_vis_feats.shape[0], 1, self.vis_feat_dim, -1).mean(-1)
+
+                # batch_size x 1 x cmb_feat_dim
+                cls_cmb_feats = self.compose(
+                    cls_vis_feats, cls_sequence_output)
+
+                # batch_size x seqlen x hidden_dim
+                sequence_cmb_feats = torch.cat(
+                    [cls_cmb_feats, bert_sequence_output[:, 1:, :]], dim=1)
+            else:
+                # batch_size x sequence_length x hidden_dim
+                sequence_vis_feats = self.attention(
+                    vis_feats, bert_sequence_output)
+
+                # batch_size x seqlen x hidden_dim
+                sequence_cmb_feats = self.compose(
+                    sequence_vis_feats, bert_sequence_output )
 
         # see  https://github.com/huggingface/pytorch-pretrained-BERT/blob/
         # 7cc35c31040d8bdfcadc274c087d6a73c2036210/pytorch_pretrained_bert/
