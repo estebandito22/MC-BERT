@@ -119,7 +119,8 @@ class VQATrainer(Trainer):
             # Prepare optimizer
             param_optimizer = list(self.model.named_parameters())
             no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-            our_decay = ['attention']
+            our_decay = ['bn1.weight', 'bn2.weight', 'conv1.weight',
+                         'conv2.weight', 'cls.weight']
             optimizer_grouped_parameters = [
                 {'params': [p for n, p in param_optimizer
                             if not any(nd in n for nd in no_decay+our_decay)],
