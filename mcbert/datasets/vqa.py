@@ -20,10 +20,9 @@ class VQADataset(Dataset):
         self.tokenizer = tokenizer
         self.n_classes = n_classes
 
-    def get_batches(self, k=10, seed=None):
+    def get_batches(self, k=10):
         """Return index batches of inputs."""
         indexes = [x for x in range(len(self))]
-        if seed: np.random.seed(seed)
         np.random.shuffle(indexes)
         s = 0
         size = int(np.ceil(len(indexes) / k))
@@ -32,6 +31,13 @@ class VQADataset(Dataset):
             batches += [indexes[s:s + size]]
             s = s + size
         return batches
+
+    def sample(self, p=1.0, seed=0):
+        """Sample a subset of the data."""
+        np.random.seed(seed)
+        if p > 1:
+            p = p / 100
+        self.metadata = self.metadata.sample(frac=p)
 
     def __len__(self):
         """Return length of dataset."""
@@ -48,7 +54,7 @@ class VQADataset(Dataset):
         #Sentence Features
         sentence = self.metadata.iat[i, 1]
         input_ids, token_type_ids, attention_mask = self.tokenizer.tokenize(sentence, self.max_sent_len)
-        
+
         #Visual Features
         vis_feats_path = self.metadata.iat[i, -1]
         vis_feats = torch.load(vis_feats_path)

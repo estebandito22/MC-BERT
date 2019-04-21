@@ -72,9 +72,13 @@ class VQATrainer(Trainer):
         self.model = None
         self.optimizer = None
         self.nn_epoch = 0
-        self.best_val_loss = float('inf')
+        self.best_val_acc = 0
         self.save_dir = None
         self.vocab = vocab
+
+        # reproducability attributes
+        self.torch_rng_state = None
+        self.numpy_rng_state = None
 
         self.USE_CUDA = torch.cuda.is_available()
 
@@ -86,7 +90,7 @@ class VQATrainer(Trainer):
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, classification=True,
                 use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
-                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only, 
+                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only,
                 normalize_vis_feats=self.normalize_vis_feats)
         elif self.model_type == 'mcb' or self.model_type == 'mcb-bi':
             bidi = True if self.model_type == 'mcb-bi' else False
@@ -96,7 +100,7 @@ class VQATrainer(Trainer):
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, bidirectional=bidi,classification=True,
                 use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
-                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only, 
+                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only,
                 use_MCB_init=self.use_MCB_init, normalize_vis_feats=self.normalize_vis_feats)
         elif self.model_type == 'mc-elmo':
             embedder = ElmoEmbedder()
@@ -146,6 +150,15 @@ class VQATrainer(Trainer):
 
         if self.USE_CUDA:
             self.model = self.model.cuda()
+
+        # reproducability and deteriministic continuation of models
+        np.random.seed(1234)
+        torch.manual_seed(1234)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+        self.torch_rng_state = torch.get_rng_state()
+        self.numpy_rng_state = np.random.get_state()
 
     def _train_epoch(self, loader):
         """Train epoch."""
@@ -311,8 +324,6 @@ class VQATrainer(Trainer):
         # concat validation datasets
         self.save_dir = save_dir
 
-        #grabbing 10%, could be smarter about this...
-        val_dataset = Subset(val_dataset, val_dataset.get_batches(int(100/eval_pct),seed=1007)[0])
         # initialize constant loaders
         val_loader = DataLoader(
             val_dataset, batch_size=self.batch_size, shuffle=False,
@@ -332,7 +343,7 @@ class VQATrainer(Trainer):
             for train_loader in train_loaders:
                 if self.nn_epoch > 0:
                     print("\nInitializing train epoch...", flush=True)
-                    train_loss, train_acc  = self._train_epoch(train_loader)
+                    train_loss, train_acc = self._train_epoch(train_loader)
 
                 print("\nInitializing val epoch...", flush=True)
                 val_loss, val_acc = self._eval_epoch(val_loader)
@@ -340,11 +351,13 @@ class VQATrainer(Trainer):
                 # report
                 print("\nEpoch: [{}/{}]\tTrain Loss: {}\tTrain Acc: {}\tVal Loss: {}\tVal Acc: {}".format(
                     self.nn_epoch, self.num_epochs, np.round(train_loss, 5),np.round(train_acc * 100, 2),
-                    np.round(val_loss, 5),np.round(val_acc * 100, 2)), flush=True)
+                    np.round(val_loss, 5), np.round(val_acc * 100, 2)), flush=True)
 
                 # save best
-                if val_loss < self.best_val_loss:
-                    self.best_val_loss = val_loss
+                if val_acc > self.best_val_acc:
+                    self.best_val_acc = val_acc
+                    self.torch_rng_state = torch.get_rng_state()
+                    self.numpy_rng_state = np.random.get_state()
                     self.save()
                 self.nn_epoch += 1
 
@@ -465,4 +478,6 @@ class VQATrainer(Trainer):
         self.USE_CUDA = torch.cuda.is_available()
         self._init_nn(train_chunks, train_data_len)
         self.model.load_state_dict(checkpoint['state_dict'])
+        torch.set_rng_state(self.torch_rng_state)
+        np.random.set_state(self.numpy_rng_state)
         self.nn_epoch += 1

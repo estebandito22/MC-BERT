@@ -110,7 +110,10 @@ if __name__ == '__main__':
     else:
         train_dataset = []
 
-    val_dataset = VQADataset(pd.read_csv(args['val_data_path'], header=None), tokenizer, args['n_classes'], max_sent_len=args['max_sent_len'])
+    val_dataset = VQADataset(
+        pd.read_csv(args['val_data_path'], header=None), tokenizer,
+        args['n_classes'], max_sent_len=args['max_sent_len'])
+    val_dataset.sample(args['eval_pct'], seed=1234)
 
     vqa = VQATrainer(model_type=args['model_type'],
                      vis_feat_dim=args['vis_feat_dim'],
@@ -143,4 +146,5 @@ if __name__ == '__main__':
     if args['report_file']:
         vqa.report_results(val_dataset, args['report_file'])
     else:
-        vqa.fit(train_dataset, args['train_blocks'], val_dataset, args['eval_pct'], args['save_dir'], warm_start)
+        vqa.fit(train_dataset, args['train_blocks'], val_dataset,
+                args['eval_pct'], args['save_dir'], warm_start)
