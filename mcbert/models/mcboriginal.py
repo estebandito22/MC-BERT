@@ -38,10 +38,10 @@ class MCBOriginalModel(nn.Module):
         lstm_hidden_dim = int(hidden_dim / 2 / (2 if bidirectional else 1))
 
         self.embedder = embedder
-        self.init_weights(self.embedder)
+        #self.init_weights(self.embedder)
 
         self.lstm = nn.LSTM(embedder.get_size(), num_layers=2, hidden_size=lstm_hidden_dim, batch_first=True, bidirectional=bidirectional, dropout=0.3)
-        self.init_weights(self.lstm)
+        #self.init_weights(self.lstm)
 
         self.drop = nn.Dropout(0.3)
 
@@ -104,14 +104,14 @@ class MCBOriginalModel(nn.Module):
         #some tasks require the visual features to be tiled, but we just need a single copy here
         vis_feats = vis_feats[:, 0, :, :].unsqueeze(1)
 
-
-        vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
-
         # batch_size x sequence_length x hidden_dim
         if self.use_attention:
+            vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
             sequence_vis_feats = self.attention(vis_feats, orig_pooled_output)
         else:
             sequence_vis_feats = vis_feats.view(bs, 1, self.vis_feat_dim, -1).mean(-1)
+            vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
+
 
         # batch_size x seqlen x cmb_feat_dim
         sequence_cmb_feats = self.compose(
