@@ -14,7 +14,7 @@ class MCBOriginalModel(nn.Module):
     def __init__(self, embedder, vis_feat_dim=2208, spatial_size=7,  hidden_dim = 2208,
                  cmb_feat_dim=16000, kernel_size=3, bidirectional=False,
                  classification=True,  use_external_MCB=True, use_attention=True,
-                 use_batchnorm=False, lm_only = False):
+                 use_batchnorm=False, lm_only = False, use_MCB_init = False, normalize_vis_feats = False):
 
 
         """Initialize MCBertModel."""
@@ -27,6 +27,7 @@ class MCBOriginalModel(nn.Module):
         self.use_attention = use_attention
         self.use_batchnorm = use_batchnorm
         self.lm_only = lm_only
+        self.normalize_vis_feats = normalize_vis_feats
 
         #hint to whatever head uses us -
         if lm_only:
@@ -38,10 +39,10 @@ class MCBOriginalModel(nn.Module):
         lstm_hidden_dim = int(hidden_dim / 2 / (2 if bidirectional else 1))
 
         self.embedder = embedder
-        #self.init_weights(self.embedder)
 
         self.lstm = nn.LSTM(embedder.get_size(), num_layers=2, hidden_size=lstm_hidden_dim, batch_first=True, bidirectional=bidirectional, dropout=0.3)
-        #self.init_weights(self.lstm)
+        if use_MCB_init:
+            self.init_weights(self.lstm)
 
         self.drop = nn.Dropout(0.3)
 
@@ -106,11 +107,11 @@ class MCBOriginalModel(nn.Module):
 
         # batch_size x sequence_length x hidden_dim
         if self.use_attention:
-            vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
+            if self.normalize_vis_feats: vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
             sequence_vis_feats = self.attention(vis_feats, orig_pooled_output)
         else:
             sequence_vis_feats = vis_feats.view(bs, 1, self.vis_feat_dim, -1).mean(-1)
-            vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
+            if self.normalize_vis_feats: vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
 
 
         # batch_size x seqlen x cmb_feat_dim

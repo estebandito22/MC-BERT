@@ -19,7 +19,7 @@ class MCBertModel(nn.Module):
     def __init__(self, vis_feat_dim=2208, spatial_size=7, hidden_dim=768,
                  cmb_feat_dim=16000, kernel_size=3, classification=False,
                  use_external_MCB=True, use_attention=True, use_batchnorm=False,
-                 lm_only=False):
+                 lm_only=False, normalize_vis_feats=False):
 
         """Initialize MCBertModel."""
         super(MCBertModel, self).__init__()
@@ -32,6 +32,7 @@ class MCBertModel(nn.Module):
         self.use_attention = use_attention
         self.use_batchnorm = use_batchnorm
         self.lm_only = lm_only
+        self.normalize_vis_feats = normalize_vis_feats
 
         version = "bert-base-cased"
         self.bert_model = BertModel.from_pretrained(version)
@@ -63,15 +64,16 @@ class MCBertModel(nn.Module):
         if self.lm_only:
             sequence_cmb_feats = bert_sequence_output[:, 0, :].unsqueeze(1)
         else:
-
             if self.classification:
                 # batch_size x 1 x hidden_dim
                 cls_sequence_output = bert_sequence_output[:, 0, :].unsqueeze(1)
                 cls_vis_feats = vis_feats[:, 0, :, :].unsqueeze(1)
                 if self.use_attention:
+                    if self.normalize_vis_feats: vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
                     cls_vis_feats = self.attention(cls_vis_feats, cls_sequence_output)
                 else:
                     cls_vis_feats = cls_vis_feats.view(cls_vis_feats.shape[0], 1, self.vis_feat_dim, -1).mean(-1)
+                    if self.normalize_vis_feats: vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
 
                 # batch_size x 1 x cmb_feat_dim
                 cls_cmb_feats = self.compose(

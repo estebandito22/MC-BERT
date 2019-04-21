@@ -77,6 +77,8 @@ if __name__ == '__main__':
     ap.add_argument("-ue", "--use_internal_MCB", action='store_true')
     ap.add_argument("-ub", "--use_batchnorm", action='store_true')
     ap.add_argument("-lm", "--use_lm_only", action='store_true')
+    ap.add_argument("-ci", "--use_MCB_init", action='store_true')
+    ap.add_argument("-nf", "--normalize_vis_feats", action='store_true')
 
     # to continue training models
     ap.add_argument("-cp", "--continue_path",
@@ -126,6 +128,8 @@ if __name__ == '__main__':
                      use_external_MCB=not args['use_internal_MCB'],
                      use_batchnorm=args['use_batchnorm'],
                      lm_only=args['use_lm_only'],
+                     normalize_vis_feats=args['normalize_vis_feats'],
+                     use_MCB_init=args['use_MCB_init'],
                      weight_decay=args['weight_decay'],
                      vocab=args['vocab_path'])
 

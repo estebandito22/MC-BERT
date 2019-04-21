@@ -31,7 +31,7 @@ class VQATrainer(Trainer):
                  dropout=0.2, n_classes=3000, batch_size=64,
                  learning_rate=3e-5, warmup_proportion=0.1, num_epochs=100, vocab=None,
                  use_attention=True, use_external_MCB=True, use_batchnorm=False,
-                 weight_decay=1e-6, lm_only=False):
+                 weight_decay=1e-6, lm_only=False, use_MCB_init = False, normalize_vis_feats = False):
         """
         Initialize BertMBC model.
 
@@ -65,6 +65,8 @@ class VQATrainer(Trainer):
         self.use_batchnorm=use_batchnorm
         self.weight_decay=weight_decay
         self.lm_only = lm_only
+        self.use_MCB_init = use_MCB_init
+        self.normalize_vis_feats = normalize_vis_feats
 
         # Model attributes
         self.model = None
@@ -84,23 +86,18 @@ class VQATrainer(Trainer):
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                 kernel_size=self.kernel_size, classification=True,
                 use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
-                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only)
-        elif self.model_type == 'mcb':
+                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only, 
+                normalize_vis_feats=self.normalize_vis_feats)
+        elif self.model_type == 'mcb' or self.model_type == 'mcb-bi':
+            bidi = True if self.model_type == 'mcb-bi' else False
             embedder = GloveEmbedder(self.vocab, 300)
             mcb_model = MCBOriginalModel(embedder,
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
-                kernel_size=self.kernel_size, bidirectional=False,classification=True,
+                kernel_size=self.kernel_size, bidirectional=bidi,classification=True,
                 use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
-                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only)
-        elif self.model_type == 'mcb-bi':
-            embedder = GloveEmbedder(self.vocab, 300)
-            mcb_model = MCBOriginalModel(embedder,
-                vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
-                hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
-                kernel_size=self.kernel_size, bidirectional=True, classification=True,
-                use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
-                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only)
+                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only, 
+                use_MCB_init=self.use_MCB_init, normalize_vis_feats=self.normalize_vis_feats)
         elif self.model_type == 'mc-elmo':
             embedder = ElmoEmbedder()
             mcb_model = MCBOriginalModel(embedder,
@@ -108,7 +105,9 @@ class VQATrainer(Trainer):
                  hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
                  kernel_size=self.kernel_size, bidirectional=True, classification=True,
                  use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
-                 use_batchnorm=self.use_batchnorm, lm_only=self.lm_only)
+                 use_batchnorm=self.use_batchnorm, lm_only=self.lm_only,
+                 use_MCB_init=self.use_MCB_init, normalize_vis_feats=self.normalize_vis_feats)
+
         else:
             raise ValueError("Did not recognize model type!")
 
@@ -297,6 +296,8 @@ class VQATrainer(Trainer):
                Use Attention: {}\n\
                Use External MCB: {}\n\
                Use Batchnorm: {}\n\
+               Use MCBPaper Init: {}\n\
+               Normalize Visual Features: {}\n\
                Save Dir: {}".format(
                    self.model_type, self.lm_only, self.vis_feat_dim, self.spatial_size,
                    self.lm_hidden_dim, self.cmb_feat_dim, self.kernel_size,
@@ -304,6 +305,7 @@ class VQATrainer(Trainer):
                    self.batch_size, train_chunks, eval_pct,
                    self.warmup_proportion, self.n_classes, self.use_attention,
                    self.use_external_MCB, self.use_batchnorm,
+                   self.use_MCB_init, self.normalize_vis_feats,
                    save_dir), flush=True)
 
         # concat validation datasets
