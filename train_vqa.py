@@ -56,6 +56,8 @@ if __name__ == '__main__':
                     help="Proportion of training steps for warmup.")
     ap.add_argument("-ne", "--num_epochs", type=int, default=5,
                     help="Number of epochs for optimization.")
+    ap.add_argument("-pt", "--patience", type=int, default=10,
+                    help="Number of to wait before reducing learning rate.")
 
     ap.add_argument("-tb", "--train_blocks", type=int, default=40,
                     help="Number of epochs for optimization.")
@@ -134,7 +136,8 @@ if __name__ == '__main__':
                      normalize_vis_feats=args['normalize_vis_feats'],
                      use_MCB_init=args['use_MCB_init'],
                      weight_decay=args['weight_decay'],
-                     vocab=args['vocab_path'])
+                     vocab=args['vocab_path'],
+                     patience=args['patience'])
 
     if args['continue_path'] and args['continue_epoch']:
         vqa.load(
