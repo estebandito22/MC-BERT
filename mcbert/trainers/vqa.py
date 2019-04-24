@@ -32,7 +32,7 @@ class VQATrainer(Trainer):
                  learning_rate=3e-5, warmup_proportion=0.1, num_epochs=100, vocab=None,
                  use_attention=True, use_external_MCB=True, use_batchnorm=False,
                  weight_decay=1e-6, lm_only=False, use_MCB_init=False,
-                 normalize_vis_feats=False, patience=10):
+                 normalize_vis_feats=False, patience=10, min_lr=0):
         """
         Initialize BertMBC model.
 
@@ -69,6 +69,7 @@ class VQATrainer(Trainer):
         self.use_MCB_init = use_MCB_init
         self.normalize_vis_feats = normalize_vis_feats
         self.patience = patience
+        self.min_lr = min_lr
 
         # Model attributes
         self.model = None
@@ -150,7 +151,8 @@ class VQATrainer(Trainer):
                 self.model.parameters(), lr=self.learning_rate,
                 weight_decay=self.weight_decay)
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer, 'max', verbose=True, patience=self.patience)
+                self.optimizer, 'max', verbose=True, patience=self.patience,
+                min_lr=self.min_lr)
 
         if self.USE_CUDA:
             self.model = self.model.cuda()
@@ -306,6 +308,7 @@ class VQATrainer(Trainer):
                Weight Decay: {}\n\
                Learning Rate: {}\n\
                Patience: {}\n\
+               Min LR: {}\n\
                Batch Size: {}\n\
                Chunks per epoch: {}\n\
                Eval Pct: {}\n\
@@ -320,7 +323,7 @@ class VQATrainer(Trainer):
                    self.model_type, self.lm_only, self.vis_feat_dim, self.spatial_size,
                    self.lm_hidden_dim, self.cmb_feat_dim, self.kernel_size,
                    self.dropout, self.weight_decay, self.learning_rate,
-                   self.patience, self.batch_size, train_chunks, eval_pct,
+                   self.patience, self.min_lr, self.batch_size, train_chunks, eval_pct,
                    self.warmup_proportion, self.n_classes, self.use_attention,
                    self.use_external_MCB, self.use_batchnorm,
                    self.use_MCB_init, self.normalize_vis_feats,
@@ -424,12 +427,13 @@ class VQATrainer(Trainer):
         return loaders
 
     def _format_model_subdir(self):
-        subdir = "BMCB_mt{}vfd{}ss{}bhd{}cfd{}ks{}lr{}wp{}do{}nc{}wd{}bn{}pt{}".\
+        subdir = "BMCB_mt{}vfd{}ss{}bhd{}cfd{}ks{}lr{}wp{}do{}nc{}wd{}bn{}pt{}mlr{}".\
                 format(self.model_type, self.vis_feat_dim, self.spatial_size,
                        self.lm_hidden_dim, self.cmb_feat_dim,
                        self.kernel_size, self.learning_rate,
                        self.warmup_proportion, self.dropout, self.n_classes,
-                       self.weight_decay, self.use_batchnorm, self.patience)
+                       self.weight_decay, self.use_batchnorm, self.patience,
+                       sself.min_lr)
         return subdir
 
     def save(self):
