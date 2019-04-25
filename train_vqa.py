@@ -92,7 +92,7 @@ if __name__ == '__main__':
                     help="Path to model for warm start.")
     ap.add_argument("-ce", "--continue_epoch", type=int,
                     help="Epoch of model for ward start.")
-    #hack to reuse this evaluation
+    # hack to reuse this evaluation
     ap.add_argument("-rf", "--report_file",
                     help="signals we want to just report on val")
 

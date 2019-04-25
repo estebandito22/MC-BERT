@@ -265,7 +265,7 @@ class VQATrainer(Trainer):
 
                 # forward pass
                 # let's calculate loss and accuracy out here
-                logits = self.model(
+                _, logits = self.model(
                     vis_feats, input_ids, token_type_ids, attention_mask, None)
                 probs = torch.nn.functional.log_softmax(logits, dim=1)
                 loss = loss_fct(probs, labels)
