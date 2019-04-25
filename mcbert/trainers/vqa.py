@@ -207,7 +207,7 @@ class VQATrainer(Trainer):
                 vis_feats, input_ids, token_type_ids, attention_mask, None, lm_feats)
 
             if self.model_type == 'mcbert' and self.nn_epoch >= (self.freeze_epoch - self.train_chunks) and self.nn_epoch < self.freeze_epoch:
-                self.train_dataset.save_sentence_tensor(input_ids, lm_feats, os.path.join(self.save_dir, self.model_dir))
+                self.train_dataset.save_sentence_tensor(input_ids, lm_feats.detach(), os.path.join(self.save_dir, self.model_dir))
 
             probs = torch.nn.functional.log_softmax(logits, dim=1)
             loss = loss_fct(probs, labels)

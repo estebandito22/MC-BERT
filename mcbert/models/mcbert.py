@@ -58,14 +58,17 @@ class MCBertModel(nn.Module):
     def forward(self, vis_feats, input_ids, token_type_ids=None,
                 attention_mask=None, lm_feats = None):
         """Forward Pass."""
-        # sequence_output: [batch_size, sequence_length, hidden_dim]
-        # pooled_output: [batch_size, hidden_dim]
-        bert_sequence_output, orig_pooled_output = self.bert_model(
-            input_ids, token_type_ids, attention_mask,
-            output_all_encoded_layers=False)
 
         if not lm_feats:
+
+            # sequence_output: [batch_size, sequence_length, hidden_dim]
+            # pooled_output: [batch_size, hidden_dim]
+            bert_sequence_output, orig_pooled_output = self.bert_model(
+                input_ids, token_type_ids, attention_mask,
+                output_all_encoded_layers=False)
+
             lm_feats = orig_pooled_output.unsqueeze(1)
+
 
         if self.lm_only:
             # batch_size x hidden_dim
