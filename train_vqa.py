@@ -107,10 +107,18 @@ if __name__ == '__main__':
     else:
         print("unknown model type", args['model_type'])
         exit(1)
+
+    if args['model_type'] == 'mc-bert':
+        dataset_hidden_size = args['lm_hidden_dim']
+    else:
+        dataset_hidden_size = None
+
     if not args['report_file']:
         train_df = pd.read_csv(args['train_data_path'], header=None)
         train_df = train_df[train_df[2] < args['n_classes']].copy()
-        train_dataset = VQADataset(train_df, tokenizer, args['n_classes'], max_sent_len=args['max_sent_len'])
+        train_dataset = VQADataset(
+            train_df, tokenizer, args['n_classes'],
+            max_sent_len=args['max_sent_len'], hidden_size=dataset_hidden_size)
     else:
         train_dataset = []
 
