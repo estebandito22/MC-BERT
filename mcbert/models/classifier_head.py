@@ -19,12 +19,12 @@ class ClassifierHeadModel(nn.Module):
         self.cls = nn.Linear(self.mcb_model.output_dim, self.n_classes)
 
     def forward(self, vis_feats, input_ids, token_type_ids=None,
-                attention_mask=None, labels=None):
+                attention_mask=None, labels=None, lm_feats=None):
         """Forward Pass."""
         # sequence_output: [batch_size, sequence_length, bert_hidden_dim]
         # pooled_output: [batch_size, bert_hidden_dim]
-        _, pooled_output = self.mcb_model(
-            vis_feats, input_ids, token_type_ids, attention_mask)
+        lm_feats, pooled_output = self.mcb_model(
+            vis_feats, input_ids, token_type_ids, attention_mask, lm_feats)
 
         pooled_output = self.drop(pooled_output)
         # logits: [batch_size, n_classes]
@@ -33,6 +33,6 @@ class ClassifierHeadModel(nn.Module):
         if labels is not None:
             loss_fct = CrossEntropyLoss()
             loss = loss_fct(logits, labels)
-            return loss
+            return lm_feats, loss
         else:
-            return logits
+            return lm_feats, logits

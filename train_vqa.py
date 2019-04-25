@@ -84,6 +84,9 @@ if __name__ == '__main__':
     ap.add_argument("-ci", "--use_MCB_init", action='store_true')
     ap.add_argument("-nf", "--normalize_vis_feats", action='store_true')
 
+    ap.add_argument("-fe", "--freeze_epoch", type=int,
+                    help="Epoch of model to freeze the language model.")
+
     # to continue training models
     ap.add_argument("-cp", "--continue_path",
                     help="Path to model for warm start.")
@@ -140,7 +143,8 @@ if __name__ == '__main__':
                      weight_decay=args['weight_decay'],
                      vocab=args['vocab_path'],
                      patience=args['patience'],
-                     min_lr=args['min_lr'])
+                     min_lr=args['min_lr'],
+                     freeze_epoch=args['freeze_epoch'])
 
     if args['continue_path'] and args['continue_epoch']:
         vqa.load(

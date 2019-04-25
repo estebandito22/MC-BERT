@@ -68,7 +68,7 @@ class MCBOriginalModel(nn.Module):
 
 
     def forward(self, vis_feats, input_ids, token_type_ids=None,
-                attention_mask=None):
+                attention_mask=None, lm_feats=None):
         """Forward Pass."""
 
         #remeber our batchsize

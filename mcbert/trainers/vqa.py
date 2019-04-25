@@ -32,7 +32,7 @@ class VQATrainer(Trainer):
                  learning_rate=3e-5, warmup_proportion=0.1, num_epochs=100, vocab=None,
                  use_attention=True, use_external_MCB=True, use_batchnorm=False,
                  weight_decay=1e-6, lm_only=False, use_MCB_init=False,
-                 normalize_vis_feats=False, patience=10, min_lr=0):
+                 normalize_vis_feats=False, patience=10, min_lr=0, freeze_epoch=None):
         """
         Initialize BertMBC model.
 
@@ -70,6 +70,7 @@ class VQATrainer(Trainer):
         self.normalize_vis_feats = normalize_vis_feats
         self.patience = patience
         self.min_lr = min_lr
+        self.freeze_epoch = freeze_epoch
 
         # Model attributes
         self.model = None
@@ -183,6 +184,12 @@ class VQATrainer(Trainer):
             attention_mask = batch_samples['attention_mask']
             # batch_size
             labels = batch_samples['labels']
+
+            if self.nn_epoch >= self.freeze_epoch:
+                lm_feats = batch_samples['lm_feats']
+            else:
+                lm_feats = None
+
             # batch_size x seqlen x channel x height x width
             vis_feats = batch_samples['vis_feats']
 
@@ -196,8 +203,11 @@ class VQATrainer(Trainer):
             # forward pass
             self.model.zero_grad()
             #let's calculate loss and accuracy out here
-            logits = self.model(
-                vis_feats, input_ids, token_type_ids, attention_mask, None)
+            lm_feats, logits = self.model(
+                vis_feats, input_ids, token_type_ids, attention_mask, None, lm_feats)
+
+            if self.model_type == 'mcbert' and self.nn_epoch >= (self.freeze_epoch - self.train_chunks) and self.nn_epoch < self.freeze_epoch:
+                self.train_dataset.save_sentence_tensor(input_ids, lm_feats, os.path.join(self.save_dir, self.model_dir))
 
             probs = torch.nn.functional.log_softmax(logits, dim=1)
             loss = loss_fct(probs, labels)
@@ -319,6 +329,7 @@ class VQATrainer(Trainer):
                Use Batchnorm: {}\n\
                Use MCBPaper Init: {}\n\
                Normalize Visual Features: {}\n\
+               Freeze Epoch: {}\n\
                Save Dir: {}".format(
                    self.model_type, self.lm_only, self.vis_feat_dim, self.spatial_size,
                    self.lm_hidden_dim, self.cmb_feat_dim, self.kernel_size,
@@ -326,11 +337,15 @@ class VQATrainer(Trainer):
                    self.patience, self.min_lr, self.batch_size, train_chunks, eval_pct,
                    self.warmup_proportion, self.n_classes, self.use_attention,
                    self.use_external_MCB, self.use_batchnorm,
-                   self.use_MCB_init, self.normalize_vis_feats,
+                   self.use_MCB_init, self.normalize_vis_feats, self.freeze_epoch,
                    save_dir), flush=True)
 
-        # concat validation datasets
         self.save_dir = save_dir
+        self.model_dir = self._format_model_subdir()
+
+        #need this to save before freezing
+        self.train_chunks = train_chunks
+        self.train_dataset = train_dataset
 
         # initialize constant loaders
         val_loader = DataLoader(
@@ -433,7 +448,7 @@ class VQATrainer(Trainer):
                        self.kernel_size, self.learning_rate,
                        self.warmup_proportion, self.dropout, self.n_classes,
                        self.weight_decay, self.use_batchnorm, self.patience,
-                       sself.min_lr)
+                       self.min_lr)
         return subdir
 
     def save(self):
@@ -447,13 +462,11 @@ class VQATrainer(Trainer):
         """
         if (self.model is not None) and (self.save_dir is not None):
 
-            model_dir = self._format_model_subdir()
-
-            if not os.path.isdir(os.path.join(self.save_dir, model_dir)):
-                os.makedirs(os.path.join(self.save_dir, model_dir))
+            if not os.path.isdir(os.path.join(self.save_dir, self.model_dir)):
+                os.makedirs(os.path.join(self.save_dir, self.model_dir))
 
             filename = "epoch_{}".format(self.nn_epoch) + '.pth'
-            fileloc = os.path.join(self.save_dir, model_dir, filename)
+            fileloc = os.path.join(self.save_dir, self.model_dir, filename)
             with open(fileloc, 'wb') as file:
                 torch.save({'state_dict': self.model.state_dict(),
                             'trainer_dict': self.__dict__}, file)

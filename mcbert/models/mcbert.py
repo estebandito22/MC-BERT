@@ -46,14 +46,17 @@ class MCBertModel(nn.Module):
                 use_batchnorm=use_batchnorm)
 
         if use_external_MCB:
-            self.compose = MCB2(self.vis_feat_dim, self.hidden_dim, self.hidden_dim)
+            self.compose = MCB2(self.vis_feat_dim, self.hidden_dim, self.cmb_feat_dim)
         else:
-            self.compose = MCB(self.vis_feat_dim, self.hidden_dim, self.hidden_dim)
+            self.compose = MCB(self.vis_feat_dim, self.hidden_dim, self.cmb_feat_dim)
 
-        self.output_dim = self.hidden_dim
+        if lm_only:
+            self.output_dim = self.hidden_dim
+        else:
+            self.output_dim = self.cmb_feat_dim
 
     def forward(self, vis_feats, input_ids, token_type_ids=None,
-                attention_mask=None):
+                attention_mask=None, lm_feats = None):
         """Forward Pass."""
         # sequence_output: [batch_size, sequence_length, hidden_dim]
         # pooled_output: [batch_size, hidden_dim]
@@ -61,12 +64,16 @@ class MCBertModel(nn.Module):
             input_ids, token_type_ids, attention_mask,
             output_all_encoded_layers=False)
 
+        if not lm_feats:
+            lm_feats = orig_pooled_output.unsqueeze(1)
+
         if self.lm_only:
-            sequence_cmb_feats = bert_sequence_output[:, 0, :].unsqueeze(1)
+            # batch_size x hidden_dim
+            pooled_output  = lm_feats.squeeze(1)
         else:
             if self.classification:
                 # batch_size x 1 x hidden_dim
-                cls_sequence_output = bert_sequence_output[:, 0, :].unsqueeze(1)
+                cls_sequence_output = lm_feats
                 cls_vis_feats = vis_feats[:, 0, :, :].unsqueeze(1)
                 if self.use_attention:
                     if self.normalize_vis_feats: vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
@@ -76,12 +83,11 @@ class MCBertModel(nn.Module):
                     if self.normalize_vis_feats: vis_feats = vis_feats / torch.sqrt((vis_feats**2).sum())
 
                 # batch_size x 1 x cmb_feat_dim
-                cls_cmb_feats = self.compose(
+                cmb_feats = self.compose(
                     cls_vis_feats, cls_sequence_output)
 
-                # batch_size x seqlen x hidden_dim
-                sequence_cmb_feats = torch.cat(
-                    [cls_cmb_feats, bert_sequence_output[:, 1:, :]], dim=1)
+                # batch_size x cmb_feat_dim
+                pooled_output = cmb_feats.squeeze(1)
             else:
                 # batch_size x sequence_length x hidden_dim
                 sequence_vis_feats = self.attention(
@@ -91,17 +97,20 @@ class MCBertModel(nn.Module):
                 sequence_cmb_feats = self.compose(
                     sequence_vis_feats, bert_sequence_output )
 
-        # see  https://github.com/huggingface/pytorch-pretrained-BERT/blob/
-        # 7cc35c31040d8bdfcadc274c087d6a73c2036210/pytorch_pretrained_bert/
-        # modeling.py#L639
-        extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
-        extended_attention_mask = extended_attention_mask.float()
-        extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
+                # see  https://github.com/huggingface/pytorch-pretrained-BERT/blob/
+                # 7cc35c31040d8bdfcadc274c087d6a73c2036210/pytorch_pretrained_bert/
+                # modeling.py#L639
+                extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
+                extended_attention_mask = extended_attention_mask.float()
+                extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
 
-        sequence_output = self.bert_layer(
-            sequence_cmb_feats, extended_attention_mask)
-        pooled_output = self.bert_pooler(sequence_cmb_feats)
-        # hack to complete graph of original Bert model
-        pooled_output = pooled_output + orig_pooled_output
+                sequence_output = self.bert_layer(
+                    sequence_cmb_feats, extended_attention_mask)
+                pooled_output = self.bert_pooler(sequence_cmb_feats)
+                # hack to complete graph of original Bert model
+                pooled_output = pooled_output + orig_pooled_output
+                # hack to work for pretraining
+                lm_feats = sequence_output
 
-        return sequence_output, pooled_output
+
+        return lm_feats, pooled_output
