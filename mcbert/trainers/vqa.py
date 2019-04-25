@@ -442,13 +442,14 @@ class VQATrainer(Trainer):
         return loaders
 
     def _format_model_subdir(self):
-        subdir = "BMCB_mt{}vfd{}ss{}bhd{}cfd{}ks{}lr{}wp{}do{}nc{}wd{}bn{}pt{}mlr{}".\
+        subdir = "BMCB_mt{}vfd{}ss{}bhd{}cfd{}ks{}lr{}wp{}do{}nc{}wd{}bn{}pt{}mlr{}exmcb{}lmo{}nvf{}fe{}".\
                 format(self.model_type, self.vis_feat_dim, self.spatial_size,
                        self.lm_hidden_dim, self.cmb_feat_dim,
                        self.kernel_size, self.learning_rate,
                        self.warmup_proportion, self.dropout, self.n_classes,
                        self.weight_decay, self.use_batchnorm, self.patience,
-                       self.min_lr)
+                       self.min_lr, self.use_external_MCB, self.lm_only,
+                       self.normalize_vis_feats, self.freeze_epoch)
         return subdir
 
     def save(self):
