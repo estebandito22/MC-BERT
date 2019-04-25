@@ -70,6 +70,8 @@ class VQATrainer(Trainer):
         self.normalize_vis_feats = normalize_vis_feats
         self.patience = patience
         self.min_lr = min_lr
+        if freeze_epoch is None:
+            freeze_epoch = 999999999
         self.freeze_epoch = freeze_epoch
 
         # Model attributes
