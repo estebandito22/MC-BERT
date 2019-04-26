@@ -8,6 +8,7 @@ from mcbert.datasets.vqa import VQADataset
 from mcbert.trainers.vqa import VQATrainer
 from mcbert.datasets.tokenizers import bert_tokenizer, mcb_tokenizer, elmo_tokenizer
 
+
 if __name__ == '__main__':
     """
     Usage:
@@ -124,7 +125,7 @@ if __name__ == '__main__':
 
     if not args['report_file']:
         train_df = pd.read_csv(args['train_data_path'], header=None)
-        train_df = pd.concatenate([train_df, val_df_sampled_comp]).reindex()
+        train_df = pd.concat([train_df, val_df_sampled_comp]).reindex()
         train_df = train_df[train_df[2] < args['n_classes']].copy()
         train_dataset = VQADataset(
             train_df, tokenizer, args['n_classes'],
