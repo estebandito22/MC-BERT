@@ -7,7 +7,7 @@ from mcbert.datasets.tokenizers.mcb_tokenizer import MCBDict
 class BasicEmbedder(torch.nn.Module):
 
     def __init__(self, vocab_file, embd_dim ):
-        super(BaseEmbedder, self).__init__()
+        super(BasicEmbedder, self).__init__()
 
         self.embd_dim = embd_dim
 
