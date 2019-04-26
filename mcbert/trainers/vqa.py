@@ -20,6 +20,7 @@ from mcbert.models.classifier_head import ClassifierHeadModel
 from mcbert.models.mcboriginal import MCBOriginalModel
 from mcbert.models.layers.embedding.glove_embedder import GloveEmbedder
 from mcbert.models.layers.embedding.elmo_embedder import ElmoEmbedder
+from mcbert.models.layers.embedding.basic_embedder import BasicEmbedder
 
 
 class VQATrainer(Trainer):
@@ -102,6 +103,16 @@ class VQATrainer(Trainer):
         elif self.model_type == 'mcb' or self.model_type == 'mcb-bi':
             bidi = True if self.model_type == 'mcb-bi' else False
             embedder = GloveEmbedder(self.vocab, 300)
+            mcb_model = MCBOriginalModel(embedder,
+                vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
+                hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
+                kernel_size=self.kernel_size, bidirectional=bidi,classification=True,
+                use_attention=self.use_attention, use_external_MCB=self.use_external_MCB,
+                use_batchnorm=self.use_batchnorm, lm_only=self.lm_only,
+                use_MCB_init=self.use_MCB_init, normalize_vis_feats=self.normalize_vis_feats)
+        elif self.model_type == 'mcb-basic':
+            bidi = True if self.model_type == 'mcb-bi' else False
+            embedder = BasicEmbedder(self.vocab, 300)
             mcb_model = MCBOriginalModel(embedder,
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
