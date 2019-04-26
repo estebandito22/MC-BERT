@@ -2,6 +2,7 @@
 
 from argparse import ArgumentParser
 import pandas as pd
+import numpy as np
 
 from mcbert.datasets.vqa import VQADataset
 from mcbert.trainers.vqa import VQATrainer
@@ -117,7 +118,8 @@ if __name__ == '__main__':
         dataset_hidden_size = None
 
     val_df = pd.read_csv(args['val_data_path'], header=None)
-    val_df_sampled = val_df.sample(args['eval_pct'], seed=1234)
+    np.random.seed(1234)
+    val_df_sampled = val_df.sample(frac=args['eval_pct'])
     val_df_sampled_comp = val_df[~val_df.index.isin(val_df_sampled.index)]
 
     if not args['report_file']:
