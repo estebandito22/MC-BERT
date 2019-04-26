@@ -116,8 +116,13 @@ if __name__ == '__main__':
     else:
         dataset_hidden_size = None
 
+    val_df = pd.read_csv(args['val_data_path'], header=None)
+    val_df_sampled = val_df.sample(args['eval_pct'], seed=1234)
+    val_df_sampled_comp = val_df[~val_df.index.isin(val_df_sampled.index)]
+
     if not args['report_file']:
         train_df = pd.read_csv(args['train_data_path'], header=None)
+        train_df = pd.concatenate([train_df, val_df_sampled_comp]).reindex()
         train_df = train_df[train_df[2] < args['n_classes']].copy()
         train_dataset = VQADataset(
             train_df, tokenizer, args['n_classes'],
@@ -126,9 +131,8 @@ if __name__ == '__main__':
         train_dataset = []
 
     val_dataset = VQADataset(
-        pd.read_csv(args['val_data_path'], header=None), tokenizer,
-        args['n_classes'], max_sent_len=args['max_sent_len'])
-    val_dataset.sample(args['eval_pct'], seed=1234)
+        val_df_sampled, tokenizer, args['n_classes'],
+        max_sent_len=args['max_sent_len'])
 
     vqa = VQATrainer(model_type=args['model_type'],
                      vis_feat_dim=args['vis_feat_dim'],
