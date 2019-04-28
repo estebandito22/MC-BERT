@@ -371,18 +371,22 @@ class VQATrainer(Trainer):
         train_loss = 0
         train_acc = 0
 
+        first_run = True
+
         # train loop
         while self.nn_epoch < self.num_epochs + 1:
 
             train_loaders = self._batch_loaders(train_dataset, k=train_chunks)
 
             for train_loader in train_loaders:
-                if self.nn_epoch > 0:
+                if not first_run > 0:
                     print("\nInitializing train epoch...", flush=True)
                     train_loss, train_acc = self._train_epoch(train_loader)
 
                 print("\nInitializing val epoch...", flush=True)
                 val_loss, val_acc = self._eval_epoch(val_loader)
+
+                first_run = False
 
                 # report
                 print("\nEpoch: [{}/{}]\tTrain Loss: {}\tTrain Acc: {}\tVal Loss: {}\tVal Acc: {}".format(
@@ -498,6 +502,7 @@ class VQATrainer(Trainer):
 
 
         skip_list = ['vocab']
+        reset_list = ['torch_rng_state', 'numpy_rng_state','optimizer', 'scheduler']
 
         epoch_file = "epoch_{}".format(epoch) + '.pth'
         model_file = os.path.join(model_dir, epoch_file)
@@ -514,6 +519,11 @@ class VQATrainer(Trainer):
         self.USE_CUDA = torch.cuda.is_available()
         self._init_nn(train_chunks, train_data_len)
         self.model.load_state_dict(checkpoint['state_dict'])
+
+        for (k, v) in checkpoint['trainer_dict'].items():
+            if k in reset_list:
+                setattr(self, k, v)
+
         torch.set_rng_state(self.torch_rng_state)
         np.random.set_state(self.numpy_rng_state)
         self.nn_epoch += 1
