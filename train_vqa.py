@@ -62,6 +62,8 @@ if __name__ == '__main__':
                     help="Number of to wait before reducing learning rate.")
     ap.add_argument("-ml", "--min_lr", type=float, default=0.0,
                     help="Minimum learning rate.")
+    ap.add_argument("-rf", "--lr_reduce_factor", type=float, default=0.1,
+                    help="factor to reduce learning by.")
 
     ap.add_argument("-tb", "--train_blocks", type=int, default=40,
                     help="Number of epochs for optimization.")
@@ -159,7 +161,9 @@ if __name__ == '__main__':
                      vocab=args['vocab_path'],
                      patience=args['patience'],
                      min_lr=args['min_lr'],
-                     freeze_epoch=args['freeze_epoch'])
+                     freeze_epoch=args['freeze_epoch'],
+                     lr_reduce_factor=args['lr_reduce_factor']
+                     )
 
     if args['continue_path'] and args['continue_epoch']:
         vqa.load(
