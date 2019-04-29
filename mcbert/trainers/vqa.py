@@ -333,6 +333,7 @@ class VQATrainer(Trainer):
                Learning Rate: {}\n\
                Patience: {}\n\
                Min LR: {}\n\
+               Reduce Factor: {}\n\
                Batch Size: {}\n\
                Chunks per epoch: {}\n\
                Eval Pct: {}\n\
@@ -348,7 +349,7 @@ class VQATrainer(Trainer):
                    self.model_type, self.lm_only, self.vis_feat_dim, self.spatial_size,
                    self.lm_hidden_dim, self.cmb_feat_dim, self.kernel_size,
                    self.dropout, self.weight_decay, self.learning_rate,
-                   self.patience, self.min_lr, self.batch_size, train_chunks, eval_pct,
+                   self.patience, self.min_lr, self.lr_reduce_factor, self.batch_size, train_chunks, eval_pct,
                    self.warmup_proportion, self.n_classes, self.use_attention,
                    self.use_external_MCB, self.use_batchnorm,
                    self.use_MCB_init, self.normalize_vis_feats, self.freeze_epoch,
