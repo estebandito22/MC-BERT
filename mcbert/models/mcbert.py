@@ -59,7 +59,7 @@ class MCBertModel(nn.Module):
                 attention_mask=None, lm_feats = None):
         """Forward Pass."""
 
-        if not lm_feats:
+        if not any(lm_feats):
 
             # sequence_output: [batch_size, sequence_length, hidden_dim]
             # pooled_output: [batch_size, hidden_dim]
