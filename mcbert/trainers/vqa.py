@@ -379,14 +379,16 @@ class VQATrainer(Trainer):
             train_loaders = self._batch_loaders(train_dataset, k=train_chunks)
 
             for train_loader in train_loaders:
-                if not first_run > 0:
+                if not first_run:
                     print("\nInitializing train epoch...", flush=True)
                     train_loss, train_acc = self._train_epoch(train_loader)
 
                 print("\nInitializing val epoch...", flush=True)
                 val_loss, val_acc = self._eval_epoch(val_loader)
 
-                first_run = False
+                if first_run:
+                    first_run = False
+                    if self.nn_epoch != 0: self.nn_epoch -= 1
 
                 # report
                 print("\nEpoch: [{}/{}]\tTrain Loss: {}\tTrain Acc: {}\tVal Loss: {}\tVal Acc: {}".format(
