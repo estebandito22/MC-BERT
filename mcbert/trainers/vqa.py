@@ -189,6 +189,10 @@ class VQATrainer(Trainer):
         correct = 0
         loss_fct = torch.nn.NLLLoss(ignore_index=int(self.n_classes - 1))
 
+        if self.nn_epoch == self.freeze_epoch:
+            print("Freezing Model, using cached values starting now.", flush=True)
+
+
         for batch_samples in tqdm(loader):
 
             # prepare training sample
@@ -200,7 +204,7 @@ class VQATrainer(Trainer):
             labels = batch_samples['labels']
 
             if self.nn_epoch >= self.freeze_epoch:
-                lm_feats = batch_samples['lm_feats']
+                lm_feats = batch_samples['lm_feats'].unsqueeze(1)
                 if self.USE_CUDA:
                     lm_feats = lm_feats.cuda()
             else:
