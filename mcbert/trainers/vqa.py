@@ -33,7 +33,7 @@ class VQATrainer(Trainer):
                  learning_rate=3e-5, warmup_proportion=0.1, num_epochs=100, vocab=None,
                  use_attention=True, use_external_MCB=True, use_batchnorm=False,
                  weight_decay=1e-6, lm_only=False, use_MCB_init=False,
-                 normalize_vis_feats=False, patience=10, min_lr=0, freeze_epoch=None):
+                 normalize_vis_feats=False, patience=10, min_lr=0, freeze_epoch=None, lr_reduce_factor=0.1):
         """
         Initialize BertMBC model.
 
@@ -70,6 +70,7 @@ class VQATrainer(Trainer):
         self.use_MCB_init = use_MCB_init
         self.normalize_vis_feats = normalize_vis_feats
         self.patience = patience
+        self.lr_reduce_factor = lr_reduce_factor
         self.min_lr = min_lr
         if freeze_epoch is None:
             freeze_epoch = 999999999
@@ -166,7 +167,7 @@ class VQATrainer(Trainer):
                 weight_decay=self.weight_decay)
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 self.optimizer, 'max', verbose=True, patience=self.patience,
-                min_lr=self.min_lr)
+                factor=self.lr_reduce_factor, min_lr=self.min_lr)
 
         if self.USE_CUDA:
             self.model = self.model.cuda()
@@ -332,6 +333,7 @@ class VQATrainer(Trainer):
                Learning Rate: {}\n\
                Patience: {}\n\
                Min LR: {}\n\
+               Reduce Factor: {}\n\
                Batch Size: {}\n\
                Chunks per epoch: {}\n\
                Eval Pct: {}\n\
@@ -347,7 +349,7 @@ class VQATrainer(Trainer):
                    self.model_type, self.lm_only, self.vis_feat_dim, self.spatial_size,
                    self.lm_hidden_dim, self.cmb_feat_dim, self.kernel_size,
                    self.dropout, self.weight_decay, self.learning_rate,
-                   self.patience, self.min_lr, self.batch_size, train_chunks, eval_pct,
+                   self.patience, self.min_lr, self.lr_reduce_factor, self.batch_size, train_chunks, eval_pct,
                    self.warmup_proportion, self.n_classes, self.use_attention,
                    self.use_external_MCB, self.use_batchnorm,
                    self.use_MCB_init, self.normalize_vis_feats, self.freeze_epoch,
