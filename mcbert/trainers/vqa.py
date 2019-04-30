@@ -201,6 +201,8 @@ class VQATrainer(Trainer):
 
             if self.nn_epoch >= self.freeze_epoch:
                 lm_feats = batch_samples['lm_feats']
+                if self.USE_CUDA:
+                    lm_feats = lm_feats.cuda()
             else:
                 lm_feats = None
 
