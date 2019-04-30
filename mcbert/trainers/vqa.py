@@ -506,7 +506,7 @@ class VQATrainer(Trainer):
 
 
         skip_list = ['vocab']
-        reset_list = ['torch_rng_state', 'numpy_rng_state','optimizer', 'scheduler']
+        # reset_list = ['torch_rng_state', 'numpy_rng_state', 'optimizer', 'scheduler']
 
         epoch_file = "epoch_{}".format(epoch) + '.pth'
         model_file = os.path.join(model_dir, epoch_file)
@@ -523,10 +523,13 @@ class VQATrainer(Trainer):
         self.USE_CUDA = torch.cuda.is_available()
         self._init_nn(train_chunks, train_data_len)
         self.model.load_state_dict(checkpoint['state_dict'])
-
-        for (k, v) in checkpoint['trainer_dict'].items():
-            if k in reset_list:
-                setattr(self, k, v)
+        self.optimizer.load_state_dict(
+            checkpoint['trainer_dict']['optimizer'].state_dict())
+        if self.scheduler is not None:
+            self.scheduler.load_state_dict(
+                checkpoint['trainer_dict']['scheduler'].state_dict())
+        self.torch_rng_state = checkpoint['trainer_dict']['torch_rng_state']
+        self.numpy_rng_state = checkpoint['trainer_dict']['numpy_rng_state']
 
         torch.set_rng_state(self.torch_rng_state)
         np.random.set_state(self.numpy_rng_state)
