@@ -62,7 +62,7 @@ if __name__ == '__main__':
                     help="Number of to wait before reducing learning rate.")
     ap.add_argument("-ml", "--min_lr", type=float, default=0.0,
                     help="Minimum learning rate.")
-    ap.add_argument("-rf", "--lr_reduce_factor", type=float, default=0.1,
+    ap.add_argument("-lrf", "--lr_reduce_factor", type=float, default=0.1,
                     help="factor to reduce learning by.")
 
     ap.add_argument("-tb", "--train_blocks", type=int, default=40,
