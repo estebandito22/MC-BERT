@@ -47,11 +47,13 @@ class VQADataset(Dataset):
 
     def save_sentence_tensor(self, input_ids, tensor, save_dir):
         """Save the lm sentence hidden state."""
-        input_ids_hash = hashlib.md5(str(input_ids).encode()).hexdigest()
-        if input_ids_hash not in self.input_ids_dict:
-            save_path = os.path.join(save_dir, input_ids_hash + '.pth')
-            self.input_ids_dict[input_ids_hash] = save_path
-            torch.save(tensor, save_dir)
+        bs, id_len = input_ids.shape
+        for i in range(bs):
+            input_ids_hash = hashlib.md5(str(input_ids[i]).encode()).hexdigest()
+            if input_ids_hash not in self.input_ids_dict:
+                save_path = os.path.join(save_dir, input_ids_hash + '.pth')
+                self.input_ids_dict[input_ids_hash] = save_path
+                torch.save(tensor[i], save_dir)
 
     def __len__(self):
         """Return length of dataset."""
