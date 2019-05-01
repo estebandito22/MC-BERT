@@ -204,7 +204,7 @@ class VQATrainer(Trainer):
             labels = batch_samples['labels']
 
             if self.nn_epoch >= self.freeze_epoch:
-                lm_feats = batch_samples['lm_feats'].unsqueeze(1)
+                lm_feats = batch_samples['lm_feats']
                 if self.USE_CUDA:
                     lm_feats = lm_feats.cuda()
             else:
@@ -226,7 +226,7 @@ class VQATrainer(Trainer):
             lm_feats, logits = self.model(
                 vis_feats, input_ids, token_type_ids, attention_mask, None, lm_feats)
 
-            if self.model_type == 'mcbert' and self.nn_epoch >= (self.freeze_epoch - self.train_chunks) and self.nn_epoch < self.freeze_epoch:
+            if (self.model_type == 'mc-bert') and (self.nn_epoch >= (self.freeze_epoch - self.train_chunks)) and (self.nn_epoch < self.freeze_epoch):
                 self.train_dataset.save_sentence_tensor(input_ids, lm_feats.detach(), os.path.join(self.save_dir, self.model_dir))
 
             probs = torch.nn.functional.log_softmax(logits, dim=1)
