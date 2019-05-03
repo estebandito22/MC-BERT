@@ -409,6 +409,8 @@ class VQATrainer(Trainer):
                     self.torch_rng_state = torch.get_rng_state()
                     self.numpy_rng_state = np.random.get_state()
                     self.save()
+                else:
+                    self.save(is_checkpoint=True)
                 self.nn_epoch += 1
 
                 if self.scheduler:
@@ -479,7 +481,7 @@ class VQATrainer(Trainer):
                        self.normalize_vis_feats, self.freeze_epoch)
         return subdir
 
-    def save(self):
+    def save(self, is_checkpoint=False):
         """
         Save model.
 
@@ -493,13 +495,16 @@ class VQATrainer(Trainer):
             if not os.path.isdir(os.path.join(self.save_dir, self.model_dir)):
                 os.makedirs(os.path.join(self.save_dir, self.model_dir))
 
-            filename = "epoch_{}".format(self.nn_epoch) + '.pth'
+            if is_checkpoint:
+                filename = "epoch_{}_checkpoint".format(self.nn_epoch) + '.pth'
+            else:
+                filename = "epoch_{}".format(self.nn_epoch) + '.pth'
             fileloc = os.path.join(self.save_dir, self.model_dir, filename)
             with open(fileloc, 'wb') as file:
                 torch.save({'state_dict': self.model.state_dict(),
                             'trainer_dict': self.__dict__}, file)
 
-    def load(self, model_dir, epoch, train_chunks=0, train_data_len=None):
+    def load(self, model_dir, epoch, train_chunks=0, train_data_len=None, is_checkpoint=False):
         """
         Load a previously trained model.
 
@@ -514,7 +519,10 @@ class VQATrainer(Trainer):
         skip_list = ['vocab']
         # reset_list = ['torch_rng_state', 'numpy_rng_state', 'optimizer', 'scheduler']
 
-        epoch_file = "epoch_{}".format(epoch) + '.pth'
+        if is_checkpoint:
+            epoch_file = "epoch_{}_checkpoint".format(epoch) + '.pth'
+        else:
+            epoch_file = "epoch_{}".format(epoch) + '.pth'
         model_file = os.path.join(model_dir, epoch_file)
         with open(model_file, 'rb') as model_dict:
             if torch.cuda.is_available():
