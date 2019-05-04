@@ -351,6 +351,7 @@ class VQATrainer(Trainer):
                Use MCBPaper Init: {}\n\
                Normalize Visual Features: {}\n\
                Freeze Epoch: {}\n\
+               Starting Epoch: {}\n\
                Save Dir: {}".format(
                    self.model_type, self.lm_only, self.vis_feat_dim, self.spatial_size,
                    self.lm_hidden_dim, self.cmb_feat_dim, self.kernel_size,
@@ -359,7 +360,7 @@ class VQATrainer(Trainer):
                    self.warmup_proportion, self.n_classes, self.use_attention,
                    self.use_external_MCB, self.use_batchnorm,
                    self.use_MCB_init, self.normalize_vis_feats, self.freeze_epoch,
-                   save_dir), flush=True)
+                   self.nn_epoch, save_dir), flush=True)
 
         self.save_dir = save_dir
         self.model_dir = self._format_model_subdir()
