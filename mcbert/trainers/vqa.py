@@ -316,10 +316,6 @@ class VQATrainer(Trainer):
         # initialize laoder
         freeze_loader = DataLoader(freeze_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
 
-        #assuming it's not LM_ONLY, but just in case.  Setting it to LM only to be more efficent.
-        saveLM_mode = self.model.mcb_model.lm_only
-        self.model.mcb_model.lm_only=True
-
         self.model.eval()
         print("\nFreezing LM weights...", flush=True)
         for batch_samples in tqdm(freeze_loader):
@@ -329,20 +325,23 @@ class VQATrainer(Trainer):
             input_ids = batch_samples['input_ids']
             token_type_ids = batch_samples['token_type_ids']
             attention_mask = batch_samples['attention_mask']
+            # batch_size x seqlen x channel x height x width
+            vis_feats = batch_samples['vis_feats']
+
 
             if self.USE_CUDA:
                 input_ids = input_ids.cuda()
                 token_type_ids = token_type_ids.cuda()
                 attention_mask = attention_mask.cuda()
+                vis_feats = vis_feats.cuda()
 
             # forward pass
             # let's calculate loss and accuracy out here
             lm_feats, _ = self.model(
-                None, input_ids, token_type_ids, attention_mask, None)
+                vis_feats, input_ids, token_type_ids, attention_mask, None)
 
             self.train_dataset.save_sentence_tensor(input_ids, lm_feats.detach(), os.path.join(self.save_dir, self.model_dir))
 
-        self.model.mcb_model.lm_only = saveLM_mode
 
 
     def fit(self, train_dataset, train_chunks, val_dataset, eval_pct, save_dir, warm_start=False):
