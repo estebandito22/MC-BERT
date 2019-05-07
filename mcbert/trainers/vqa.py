@@ -315,7 +315,7 @@ class VQATrainer(Trainer):
     def _freeze_dataset(self, freeze_dataset):
         # initialize laoder
         #freeze_loader = DataLoader(freeze_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
-        freeze_loader = DataLoader(freeze_dataset, batch_size=64, shuffle=False, num_workers=8)
+        freeze_loader = DataLoader(freeze_dataset, batch_size=32, shuffle=False, num_workers=8)
 
         self.model.eval()
         print("\nFreezing LM weights...", flush=True)
