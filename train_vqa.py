@@ -96,6 +96,8 @@ if __name__ == '__main__':
                     help="Path to model for warm start.")
     ap.add_argument("-ce", "--continue_epoch", type=int,
                     help="Epoch of model for ward start.")
+    ap.add_argument("-ic", "--is_checkpoint", action='store_true',
+                    help="Is the model being loaded a checkpoint.")
     # hack to reuse this evaluation
     ap.add_argument("-rf", "--report_file",
                     help="signals we want to just report on val")
@@ -162,13 +164,13 @@ if __name__ == '__main__':
                      patience=args['patience'],
                      min_lr=args['min_lr'],
                      freeze_epoch=args['freeze_epoch'],
-                     lr_reduce_factor=args['lr_reduce_factor']
-                     )
+                     lr_reduce_factor=args['lr_reduce_factor'])
 
     if args['continue_path'] and args['continue_epoch']:
         print("Loading epoch", str(args['continue_epoch']), "from", args['continue_path'])
         vqa.load(
-            args['continue_path'], args['continue_epoch'], args['train_blocks'], len(train_dataset))
+            args['continue_path'], args['continue_epoch'],
+            args['train_blocks'], len(train_dataset), args['is_checkpoint'])
         warm_start = True
     else:
         warm_start = False
