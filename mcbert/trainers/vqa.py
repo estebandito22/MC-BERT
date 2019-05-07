@@ -3,6 +3,7 @@
 import os
 import csv
 import random
+import copy
 
 import numpy as np
 from tqdm import tqdm
@@ -314,6 +315,10 @@ class VQATrainer(Trainer):
 
     def _freeze_dataset(self, freeze_dataset):
         # initialize laoder
+
+        freeze_dataset = copy.deepcopy(freeze_dataset)
+        freeze_dataset.metadata = freeze_dataset.metadata.drop_duplicates(1)
+
         #freeze_loader = DataLoader(freeze_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
         freeze_loader = DataLoader(freeze_dataset, batch_size=32, shuffle=False, num_workers=8)
 
@@ -326,20 +331,16 @@ class VQATrainer(Trainer):
             input_ids = batch_samples['input_ids']
             token_type_ids = batch_samples['token_type_ids']
             attention_mask = batch_samples['attention_mask']
-            # batch_size x seqlen x channel x height x width
-            vis_feats = batch_samples['vis_feats']
-
 
             if self.USE_CUDA:
                 input_ids = input_ids.cuda()
                 token_type_ids = token_type_ids.cuda()
                 attention_mask = attention_mask.cuda()
-                vis_feats = vis_feats.cuda()
 
             # forward pass
-            # let's calculate loss and accuracy out here
-            lm_feats, _ = self.model(
-                vis_feats, input_ids, token_type_ids, attention_mask, None)
+            _, lm_feats = self.model.mcb_model.bert_forward(
+                input_ids, token_type_ids, attention_mask)
+
 
             if lm_feats[0,0,0] == 0:
                 print("Recieved a zero vector in freeze???", lm_feats)
@@ -426,7 +427,7 @@ class VQATrainer(Trainer):
                 print("\nInitializing val epoch...", flush=True)
                 val_loss, val_acc = self._eval_epoch(val_loader)
                 print("\nEpoch: [{}/{}]\tTrain Loss: {:.5f}\tTrain Acc: {:.2f}\tVal Loss: {:.5f}\tVal Acc: {:.2f}".format(
-                    self.nn_epoch, self.num_epochs, train_loss, train_acc, val_loss, val_acc), flush=True)
+                    self.nn_epoch, self.num_epochs, train_loss*100, train_acc, val_loss, val_acc*100), flush=True)
                 self.nn_epoch += 1
 
             for train_loader in train_loaders:
@@ -444,7 +445,7 @@ class VQATrainer(Trainer):
 
                 # report
                 print("\nEpoch: [{}/{}]\tTrain Loss: {:.5f}\tTrain Acc: {:.2f}\tVal Loss: {:.5f}\tVal Acc: {:.2f}".format(
-                    self.nn_epoch, self.num_epochs, train_loss, train_acc, val_loss, val_acc), flush=True)
+                    self.nn_epoch, self.num_epochs, train_loss, train_acc*100, val_loss, val_acc*100), flush=True)
 
                 # save best
                 if val_acc > self.best_val_acc:
