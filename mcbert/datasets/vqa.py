@@ -56,6 +56,7 @@ class VQADataset(Dataset):
             input_ids_hash = hashlib.md5(str(input_ids[i]).encode()).hexdigest()
             feats = tensor[i].squeeze(0)
             if input_ids_hash not in self.input_ids_dict:
+                #print("Saving hash:", input_ids_hash, "for", str(input_ids[i]).encode() )
                 save_path = os.path.join(save_dir, input_ids_hash + '.pth')
                 self.input_ids_dict[input_ids_hash] = save_path
                 torch.save(feats, save_path)
@@ -78,6 +79,7 @@ class VQADataset(Dataset):
             sentence, self.max_sent_len)
 
         input_ids_hash = hashlib.md5(str(input_ids).encode()).hexdigest()
+        #print("looking for hash:", input_ids_hash, "for", str(input_ids).encode())
         if input_ids_hash in self.input_ids_dict:
             load_path = self.input_ids_dict[input_ids_hash]
             lm_feats = torch.load(load_path)

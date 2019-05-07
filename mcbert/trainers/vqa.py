@@ -340,7 +340,10 @@ class VQATrainer(Trainer):
             lm_feats, _ = self.model(
                 vis_feats, input_ids, token_type_ids, attention_mask, None)
 
-            self.train_dataset.save_sentence_tensor(input_ids, lm_feats.detach(), os.path.join(self.save_dir, self.model_dir, "freeze"))
+            if lm_feats[0,0,0] == 0:
+                print("Recieved a zero vector in freeze???", lm_feats)
+
+            self.train_dataset.save_sentence_tensor(input_ids.cpu(), lm_feats.detach().cpu(), os.path.join(self.save_dir, self.model_dir, "freeze"))
 
 
 
@@ -415,30 +418,32 @@ class VQATrainer(Trainer):
         # train loop
         while self.nn_epoch < self.num_epochs + 1:
 
-            #Don't want to freeze in the midle of a pass through the data, so doing it out here
-
-            if (self.model_type == 'mc-bert') and (self.nn_epoch >= self.freeze_epoch) and not self.frozen:
-                self._freeze_dataset(train_dataset)
-                self.frozen = True
-
             train_loaders = self._batch_loaders(train_dataset, k=train_chunks)
 
+            if first_run:
+                first_run = False
+                print("\nInitializing val epoch...", flush=True)
+                val_loss, val_acc = self._eval_epoch(val_loader)
+                print("\nEpoch: [{}/{}]\tTrain Loss: {:.5f}\tTrain Acc: {:.2f}\tVal Loss: {:.5f}\tVal Acc: {:.2f}".format(
+                    self.nn_epoch, self.num_epochs, train_loss, train_acc, val_loss, val_acc), flush=True)
+                self.nn_epoch += 1
+
             for train_loader in train_loaders:
-                if not first_run:
-                    print("\nInitializing train epoch...", flush=True)
-                    train_loss, train_acc = self._train_epoch(train_loader)
+    
+                #if it's time to freeze, save all the features
+                if (self.model_type == 'mc-bert') and (self.nn_epoch >= self.freeze_epoch) and not self.frozen:
+                    self._freeze_dataset(train_dataset)
+                    self.frozen = True
+
+                print("\nInitializing train epoch...", flush=True)
+                train_loss, train_acc = self._train_epoch(train_loader)
 
                 print("\nInitializing val epoch...", flush=True)
                 val_loss, val_acc = self._eval_epoch(val_loader)
 
-                if first_run:
-                    first_run = False
-                    if self.nn_epoch != 0: self.nn_epoch -= 1
-
                 # report
-                print("\nEpoch: [{}/{}]\tTrain Loss: {}\tTrain Acc: {}\tVal Loss: {}\tVal Acc: {}".format(
-                    self.nn_epoch, self.num_epochs, np.round(train_loss, 5),np.round(train_acc * 100, 2),
-                    np.round(val_loss, 5), np.round(val_acc * 100, 2)), flush=True)
+                print("\nEpoch: [{}/{}]\tTrain Loss: {:.5f}\tTrain Acc: {:.2f}\tVal Loss: {:.5f}\tVal Acc: {:.2f}".format(
+                    self.nn_epoch, self.num_epochs, train_loss, train_acc, val_loss, val_acc), flush=True)
 
                 # save best
                 if val_acc > self.best_val_acc:
@@ -448,6 +453,7 @@ class VQATrainer(Trainer):
                     self.save()
                 else:
                     self.save(is_checkpoint=True)
+
                 self.nn_epoch += 1
 
                 if self.scheduler:
@@ -584,4 +590,4 @@ class VQATrainer(Trainer):
 
         torch.set_rng_state(self.torch_rng_state)
         np.random.set_state(self.numpy_rng_state)
-        self.nn_epoch += 1
+        #self.nn_epoch += 1  #leave this as the last epoch, we'll do another val on it
