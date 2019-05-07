@@ -167,6 +167,7 @@ if __name__ == '__main__':
                      lr_reduce_factor=args['lr_reduce_factor'])
 
     if args['continue_path'] and args['continue_epoch']:
+        print("Loading epoch", str(args['continue_epoch']), "from", args['continue_path'])
         vqa.load(
             args['continue_path'], args['continue_epoch'],
             args['train_blocks'], len(train_dataset), args['is_checkpoint'])
