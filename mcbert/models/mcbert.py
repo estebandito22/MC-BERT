@@ -68,7 +68,9 @@ class MCBertModel(nn.Module):
                 output_all_encoded_layers=False)
 
             lm_feats = orig_pooled_output.unsqueeze(1)
-
+        else:
+            if lm_feats[0,0,0] == 0:
+                print("Recieved a zero vector???", lm_feats)
 
         if self.lm_only:
             # batch_size x hidden_dim
@@ -114,6 +116,7 @@ class MCBertModel(nn.Module):
                 pooled_output = pooled_output + orig_pooled_output
                 # hack to work for pretraining
                 lm_feats = sequence_output
+
 
 
         return lm_feats, pooled_output

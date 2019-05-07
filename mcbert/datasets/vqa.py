@@ -47,6 +47,10 @@ class VQADataset(Dataset):
 
     def save_sentence_tensor(self, input_ids, tensor, save_dir):
         """Save the lm sentence hidden state."""
+
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+
         bs, id_len = input_ids.shape
         for i in range(bs):
             input_ids_hash = hashlib.md5(str(input_ids[i]).encode()).hexdigest()
@@ -78,6 +82,7 @@ class VQADataset(Dataset):
             load_path = self.input_ids_dict[input_ids_hash]
             lm_feats = torch.load(load_path)
             lm_feats = lm_feats.unsqueeze(0)
+            #print("Found hash:", input_ids_hash, "path:", load_path, "feats:", lm_feats[0,0:6], flush=True)
         elif self.hidden_size:
             lm_feats = torch.zeros(1,self.hidden_size)
         else:

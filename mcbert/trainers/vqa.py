@@ -340,7 +340,7 @@ class VQATrainer(Trainer):
             lm_feats, _ = self.model(
                 vis_feats, input_ids, token_type_ids, attention_mask, None)
 
-            self.train_dataset.save_sentence_tensor(input_ids, lm_feats.detach(), os.path.join(self.save_dir, self.model_dir))
+            self.train_dataset.save_sentence_tensor(input_ids, lm_feats.detach(), os.path.join(self.save_dir, self.model_dir, "freeze"))
 
 
 
