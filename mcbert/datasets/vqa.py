@@ -25,6 +25,7 @@ class VQADataset(Dataset):
         self.n_classes = n_classes
         self.hidden_size = hidden_size
         self.input_ids_dict = {}
+        self.input_tensors_dict = {}
 
     def get_batches(self, k=10):
         """Return index batches of inputs."""
@@ -47,7 +48,6 @@ class VQADataset(Dataset):
 
     def save_sentence_tensor(self, input_ids, tensor, save_dir):
         """Save the lm sentence hidden state."""
-
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
 
@@ -60,6 +60,11 @@ class VQADataset(Dataset):
                 save_path = os.path.join(save_dir, input_ids_hash + '.pth')
                 self.input_ids_dict[input_ids_hash] = save_path
                 torch.save(feats, save_path)
+
+    def load_sentence_tensors(self):
+        """Load sentence tensors to memory."""
+        for k, v in self.input_ids_dict.items():
+            self.input_tensors_dict[k] = torch.load(v)
 
     def __len__(self):
         """Return length of dataset."""
@@ -80,9 +85,8 @@ class VQADataset(Dataset):
 
         input_ids_hash = hashlib.md5(str(input_ids).encode()).hexdigest()
         #print("looking for hash:", input_ids_hash, "for", str(input_ids).encode())
-        if input_ids_hash in self.input_ids_dict:
-            load_path = self.input_ids_dict[input_ids_hash]
-            lm_feats = torch.load(load_path)
+        if input_ids_hash in self.input_tensors_dict:
+            lm_feats = self.input_tensors_dict[input_ids_hash]
             lm_feats = lm_feats.unsqueeze(0)
             #print("Found hash:", input_ids_hash, "path:", load_path, "feats:", lm_feats[0,0:6], flush=True)
         elif self.hidden_size:

@@ -400,10 +400,6 @@ class VQATrainer(Trainer):
         self.save_dir = save_dir
         self.model_dir = self._format_model_subdir()
 
-        #need this to save before freezing
-        self.train_chunks = train_chunks
-        self.train_dataset = train_dataset
-
         # initialize constant loaders
         val_loader = DataLoader(
             val_dataset, batch_size=self.batch_size, shuffle=False,
@@ -411,7 +407,10 @@ class VQATrainer(Trainer):
 
         # initialize neural network and training variables
         if not warm_start:
-            self._init_nn(train_chunks, len(train_dataset))
+            #need this to save before freezing
+            self.train_chunks = train_chunks
+            self.train_dataset = train_dataset
+            self._init_nn(train_chunks, len(self.train_dataset))
         train_loss = 0
         train_acc = 0
 
@@ -420,7 +419,8 @@ class VQATrainer(Trainer):
         # train loop
         while self.nn_epoch < self.num_epochs + 1:
 
-            train_loaders = self._batch_loaders(train_dataset, k=train_chunks)
+            train_loaders = self._batch_loaders(
+                self.train_dataset, k=self.train_chunks)
 
             if first_run:
                 first_run = False
@@ -431,10 +431,11 @@ class VQATrainer(Trainer):
                 self.nn_epoch += 1
 
             for train_loader in train_loaders:
-    
+
                 #if it's time to freeze, save all the features
                 if (self.model_type == 'mc-bert') and (self.nn_epoch >= self.freeze_epoch) and not self.frozen:
-                    self._freeze_dataset(train_dataset)
+                    self._freeze_dataset(self.train_dataset)
+                    self.train_dataset.load_sentence_tensors()
                     self.frozen = True
 
                 print("\nInitializing train epoch...", flush=True)
@@ -592,4 +593,10 @@ class VQATrainer(Trainer):
 
         torch.set_rng_state(self.torch_rng_state)
         np.random.set_state(self.numpy_rng_state)
+
+        # for backward compatability
+        if not hasattr(self.train_dataset, 'input_tensors_dict'):
+            self.train_dataset.input_tensors_dict = {}
+        if not self.train_dataset.input_tensors_dict and self.train_dataset.input_ids_dict:
+            self.train_dataset.load_sentence_tensors()
         #self.nn_epoch += 1  #leave this as the last epoch, we'll do another val on it
