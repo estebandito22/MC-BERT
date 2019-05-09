@@ -550,8 +550,7 @@ class VQATrainer(Trainer):
             fileloc = os.path.join(self.save_dir, self.model_dir, filename)
             with open(fileloc, 'wb') as file:
                 trainer_dict = self.__dict__
-                if 'input_tensors_dict' in trainer_dict['train_dataset']:
-                    trainer_dict['train_dataset']['input_tensors_dict'] = {}
+                trainer_dict['train_dataset'].input_tensors_dict = {}
                 torch.save({'state_dict': self.model.state_dict(),
                             'trainer_dict': trainer_dict}, file)
 
