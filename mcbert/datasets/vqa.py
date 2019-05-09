@@ -97,7 +97,7 @@ class VQADataset(Dataset):
         # Visual Features
         vis_feats_path = self.metadata.iat[i, -1]
         vis_feats = torch.load(vis_feats_path)
-        vis_feats = vis_feats.unsqueeze(0).repeat(input_ids.size(0), 1, 1, 1)
+        vis_feats = vis_feats.unsqueeze(0)
         vis_feats = vis_feats.detach()
         vis_feats.requires_grad_(False)
 
