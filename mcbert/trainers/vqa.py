@@ -395,7 +395,9 @@ class VQATrainer(Trainer):
                    self.warmup_proportion, self.n_classes, self.use_attention,
                    self.use_external_MCB, self.use_batchnorm,
                    self.use_MCB_init, self.normalize_vis_feats, self.freeze_epoch,
-                   self.nn_epoch, save_dir), flush=True)
+                   self.nn_epoch,
+                   os.path.join(save_dir, self._format_model_subdir())),
+              flush=True)
 
         self.save_dir = save_dir
         self.model_dir = self._format_model_subdir()
