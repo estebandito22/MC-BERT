@@ -456,8 +456,8 @@ class VQATrainer(Trainer):
                     self.torch_rng_state = torch.get_rng_state()
                     self.numpy_rng_state = np.random.get_state()
                     self.save()
-                else:
-                    self.save(is_checkpoint=True)
+                # else:
+                #     self.save(is_checkpoint=True)
 
                 self.nn_epoch += 1
 
