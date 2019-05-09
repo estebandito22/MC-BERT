@@ -563,9 +563,7 @@ class VQATrainer(Trainer):
             epoch : epoch of model to load.
 
         """
-
-
-        skip_list = ['vocab']
+        skip_list = ['vocab', 'batch_size']
         # reset_list = ['torch_rng_state', 'numpy_rng_state', 'optimizer', 'scheduler']
 
         if is_checkpoint:
