@@ -549,7 +549,7 @@ class VQATrainer(Trainer):
                 filename = "epoch_{}".format(self.nn_epoch) + '.pth'
             fileloc = os.path.join(self.save_dir, self.model_dir, filename)
             with open(fileloc, 'wb') as file:
-                trainer_dict = self.__dict__
+                trainer_dict = copy.deepcopy(self.__dict__)
                 trainer_dict['train_dataset'].input_tensors_dict = {}
                 torch.save({'state_dict': self.model.state_dict(),
                             'trainer_dict': trainer_dict}, file)
