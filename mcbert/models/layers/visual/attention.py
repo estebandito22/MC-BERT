@@ -13,7 +13,8 @@ class AttentionMechanism(nn.Module):
     """AttentionMechanism."""
 
     def __init__(self, feat_dim, spatial_size, cmb_feat_dim, kernel_size,
-                 hidden_size, use_external_MCB=True, use_batchnorm=False):
+                 hidden_size, use_external_MCB=True, use_batchnorm=False,
+                 normalize=False):
         """
         Initialize AttentionMechanism.
 
@@ -34,6 +35,7 @@ class AttentionMechanism(nn.Module):
         self.hidden_size = hidden_size
         self.use_external_MCB = use_external_MCB
         self.use_batchnorm = use_batchnorm
+        self.normalize = normalize
         assert self.kernel_size % 2 == 1, "kernel_size must be odd."
 
         self.bn1 = nn.BatchNorm2d(self.cmb_feat_dim)
@@ -44,9 +46,16 @@ class AttentionMechanism(nn.Module):
         self.conv2 = nn.Conv2d(in_channels=512, out_channels=2,
             kernel_size=self.kernel_size, padding=self.kernel_size // 2)
         if use_external_MCB:
-            self.compose_func = MCB2(self.feat_dim, self.hidden_size, self.cmb_feat_dim)
+            self.compose_func = MCB2(
+                self.feat_dim, self.hidden_size, self.cmb_feat_dim)
         else:
-            self.compose_func = MCB(self.feat_dim, self.hidden_size, self.cmb_feat_dim)
+            self.compose_func = MCB(
+                self.feat_dim, self.hidden_size, self.cmb_feat_dim)
+
+        self.drop = nn.Dropout(p=0.1)
+
+    def signed_sqrt(self, x):
+        return torch.mul(torch.sign(x), torch.sqrt(torch.abs(x) + 1e-12))
 
     def forward(self, vis_feats, txt_feats):
         """Forward Pass."""
@@ -58,18 +67,27 @@ class AttentionMechanism(nn.Module):
 
         bs, seqlen, vis_feat_dim, height, width = vis_feats.size()
 
-        #bs x (seq_len * height * width) x feat_dim
-        #TODO: note this currently only works if seq_len == 1
+        # bs x (seq_len * height * width) x feat_dim
+        # TODO: note this currently only works if seq_len == 1
         if self.use_external_MCB:
-            txt_feats = txt_feats.permute(0, 1, 3, 4, 2).contiguous().view(bs, -1, hidden_size)
-            vis_feats_transform = vis_feats.permute(0, 1, 3, 4, 2).contiguous().view(bs, -1, vis_feat_dim)
+            txt_feats = txt_feats.permute(
+                0, 1, 3, 4, 2).contiguous().view(bs, -1, hidden_size)
+            vis_feats_transform = vis_feats.permute(
+                0, 1, 3, 4, 2).contiguous().view(bs, -1, vis_feat_dim)
         else:
             vis_feats_transform = vis_feats
 
         # outputs batch_size x seqlen x cmb_feat_dim x height x width
         x = self.compose_func(vis_feats_transform, txt_feats)
-        if self.use_external_MCB: x = x.permute(0, 2, 1)
+        if self.use_external_MCB:
+            x = x.permute(0, 2, 1)
         x = x.contiguous()
+
+        # signsqrt and l2 normalize
+        x = self.signed_sqrt(x)
+        x = F.normalize(x, p=2, dim=2)
+        x = self.drop(x)
+
         x = x.view(bs * seqlen, self.cmb_feat_dim, height, width)
         if self.use_batchnorm:
             x = self.bn1(x)

@@ -6,7 +6,7 @@ from mcbert.datasets.tokenizers.mcb_tokenizer import MCBDict
 
 class GloveEmbedder(torch.nn.Module):
 
-    def __init__(self, vocab_file, embd_dim ):
+    def __init__(self, vocab_file, embd_dim, use_MCB_init=False):
         super(GloveEmbedder, self).__init__()
 
         self.embd_dim = embd_dim
@@ -34,6 +34,9 @@ class GloveEmbedder(torch.nn.Module):
         # mask pretrained embeddings
         self.glove.weight.register_hook(
             lambda grad: grad * self.embeddings_mask)
+
+        if use_MCB_init:
+            nn.init.uniform_(self.embedding.weight, -0.08, 0.08)
 
     def forward(self, input_ids):
 

@@ -2,6 +2,7 @@
 
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 from pytorch_pretrained_bert import BertModel
 from pytorch_pretrained_bert.modeling import BertLayer
@@ -39,6 +40,8 @@ class MCBertModel(nn.Module):
         self.bert_layer = BertLayer(self.bert_model.config)
         self.bert_pooler = BertPooler(self.bert_model.config)
 
+        self.drop = nn.Dropout(0.1)
+
         if use_attention:
             self.attention = AttentionMechanism(
                 self.vis_feat_dim, self.spatial_size, self.cmb_feat_dim,
@@ -55,8 +58,11 @@ class MCBertModel(nn.Module):
         else:
             self.output_dim = self.cmb_feat_dim
 
+    def signed_sqrt(self, x):
+        return torch.mul(torch.sign(x), torch.sqrt(torch.abs(x) + 1e-12))
+
     def bert_forward(self, input_ids, token_type_ids, attention_mask):
-        
+
         bert_sequence_output, orig_pooled_output = self.bert_model(
             input_ids, token_type_ids, attention_mask,
             output_all_encoded_layers=False)
@@ -97,6 +103,11 @@ class MCBertModel(nn.Module):
                 # batch_size x 1 x cmb_feat_dim
                 cmb_feats = self.compose(
                     cls_vis_feats, cls_sequence_output)
+
+                # signsqrt and l2 normalize
+                cmb_feats = self.signed_sqrt(cmb_feats)
+                cmb_feats = F.normalize(cmb_feats, p=2, dim=2)
+                cmb_feats = self.drop(cmb_feats)
 
                 # batch_size x cmb_feat_dim
                 pooled_output = cmb_feats.squeeze(1)

@@ -2,6 +2,7 @@
 
 from torch import nn
 import torch
+import torch.nn.functional as F
 
 from mcbert.models.layers.visual.attention import AttentionMechanism
 from mcbert.models.layers.composition.mcb import MCB
@@ -45,6 +46,7 @@ class MCBOriginalModel(nn.Module):
             self.init_weights(self.lstm)
 
         self.drop = nn.Dropout(0.3)
+        self.drop2 = nn.Dropout(0.1)
 
         if use_attention:
             self.attention = AttentionMechanism(
@@ -62,10 +64,12 @@ class MCBOriginalModel(nn.Module):
     def init_weights(self, module):
         for param in module.state_dict():
             if "weight" in param:
-                nn.init.uniform_(module.state_dict()[param], a=-0.8, b=0.8)
+                nn.init.uniform_(module.state_dict()[param], a=-0.08, b=0.08)
             if "bias" in param:
                 torch.nn.init.constant_(module.state_dict()[param], 0)
 
+    def signed_sqrt(self, x):
+        return torch.mul(torch.sign(x), torch.sqrt(torch.abs(x) + 1e-12))
 
     def forward(self, vis_feats, input_ids, token_type_ids=None,
                 attention_mask=None, lm_feats=None):
@@ -76,7 +80,7 @@ class MCBOriginalModel(nn.Module):
 
         #bit of a hack, but we pass the length through in the token_type_ids
         #just need one per example
-        lengths = token_type_ids[:,[0]].squeeze(-1)
+        lengths = token_type_ids[:, [0]].squeeze(-1)
 
         inpt = self.embedder(input_ids)
 
@@ -117,6 +121,11 @@ class MCBOriginalModel(nn.Module):
         # batch_size x seqlen x cmb_feat_dim
         sequence_cmb_feats = self.compose(
             orig_pooled_output, sequence_vis_feats)
+
+        # signsqrt and l2 normalize
+        sequence_cmb_feats = self.signed_sqrt(sequence_cmb_feats)
+        sequence_cmb_feats = F.normalize(sequence_cmb_feats, p=2, dim=2)
+        sequence_cmb_feats = self.drop2(sequence_cmb_feats)
 
         pooled_output = sequence_cmb_feats.squeeze(1)#[:,-1,:]
 

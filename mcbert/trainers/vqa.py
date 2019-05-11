@@ -105,7 +105,7 @@ class VQATrainer(Trainer):
                 normalize_vis_feats=self.normalize_vis_feats)
         elif self.model_type == 'mcb' or self.model_type == 'mcb-bi':
             bidi = True if self.model_type == 'mcb-bi' else False
-            embedder = GloveEmbedder(self.vocab, 300)
+            embedder = GloveEmbedder(self.vocab, 300, self.use_MCB_init)
             mcb_model = MCBOriginalModel(embedder,
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
@@ -115,7 +115,7 @@ class VQATrainer(Trainer):
                 use_MCB_init=self.use_MCB_init, normalize_vis_feats=self.normalize_vis_feats)
         elif self.model_type == 'mcb-basic':
             bidi = True if self.model_type == 'mcb-bi' else False
-            embedder = BasicEmbedder(self.vocab, 300)
+            embedder = BasicEmbedder(self.vocab, 300, self.use_MCB_init)
             mcb_model = MCBOriginalModel(embedder,
                 vis_feat_dim=self.vis_feat_dim, spatial_size=self.spatial_size,
                 hidden_dim=self.lm_hidden_dim, cmb_feat_dim=self.cmb_feat_dim,
