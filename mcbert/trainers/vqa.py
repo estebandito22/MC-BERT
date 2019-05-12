@@ -154,11 +154,11 @@ class VQATrainer(Trainer):
                  'weight_decay': 0.0},
                 {'params': [p for n, p in param_optimizer
                             if any(nd in n for nd in our_decay)],
-                 'weight_decay': self.weight_decay}
+                 'weight_decay': self.weight_decay, 'lr': self.learning_rate}
                 ]
 
             self.optimizer = BertAdam(
-                optimizer_grouped_parameters, lr=self.learning_rate,
+                optimizer_grouped_parameters, lr=3e-5,
                 warmup=self.warmup_proportion,
                 t_total=int(train_dataset_len / train_chunks
                             / self.batch_size * self.num_epochs))
